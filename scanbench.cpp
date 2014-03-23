@@ -146,30 +146,6 @@ static void time_algorithm(T &&alg, int iter)
     std::cout << alg.name() << ": " << elapsed.count() << '\n';
 }
 
-#if 0
-static void do_serial(const std::vector<cl_int> &h_a, int iter)
-{
-    std::vector<cl_int> a = h_a;
-    std::partial_sum(a.begin(), a.end(), a.begin()); // warmup
-
-    time_function("serial", [&] {
-        for (int i = 0; i < iter; i++)
-            std::partial_sum(a.begin(), a.end(), a.begin());
-    });
-}
-
-static void do_gnu_parallel(const std::vector<cl_int> &h_a, int iter)
-{
-    std::vector<cl_int> a = h_a;
-    __gnu_parallel::partial_sum(a.begin(), a.end(), a.begin()); // warmup
-
-    time_function("__gnu_parallel", [&] {
-        for (int i = 0; i < iter; i++)
-            __gnu_parallel::partial_sum(a.begin(), a.end(), a.begin());
-    });
-}
-#endif
-
 int main()
 {
     const int iter = 10;
