@@ -5,6 +5,7 @@
 #include <boost/compute/algorithm/copy.hpp>
 #include <boost/compute/algorithm/exclusive_scan.hpp>
 #include <parallel/numeric>
+#include <parallel/algorithm>
 #include <numeric>
 #include <vector>
 #include <iostream>
@@ -21,7 +22,7 @@ class vex_algorithm
 protected:
     vex::Context ctx;
 
-    vex_algorithm() : ctx(vex::Filter::Type(CL_DEVICE_TYPE_GPU))
+    vex_algorithm() : ctx(vex::Filter::Position(0))
     {
         if (!ctx)
             throw std::runtime_error("No device found for vex");
@@ -193,6 +194,45 @@ public:
     }
 };
 
+template<typename T>
+class serial_sort
+{
+protected:
+    std::vector<T> d_a;
+    std::vector<T> d_target;
+
+public:
+    serial_sort(const std::vector<T> &h_a)
+        : d_a(h_a)
+    {
+    }
+
+    std::string name() const { return "serial sort"; }
+
+    void run()
+    {
+        d_target = d_a;
+        std::sort(d_target.begin(), d_target.end());
+    }
+
+    void finish() {}
+};
+
+template<typename T>
+class parallel_sort : public serial_sort<T>
+{
+public:
+    using serial_sort<T>::serial_sort;
+
+    std::string name() const { return "parallel sort"; }
+
+    void run()
+    {
+        this->d_target = this->d_a;
+        __gnu_parallel::sort(this->d_target.begin(), this->d_target.end());
+    }
+};
+
 /************************************************************************/
 
 template<typename T>
@@ -233,5 +273,7 @@ int main()
         rnd[i] = (cl_uint) i * 0x9E3779B9;
     time_algorithm(vex_sort<cl_uint>(rnd), N, iter);
     time_algorithm(clogs_sort<cl_uint>(rnd), N, iter);
+    time_algorithm(serial_sort<cl_uint>(rnd), N, iter);
+    time_algorithm(parallel_sort<cl_uint>(rnd), N, iter);
     return 0;
 }
