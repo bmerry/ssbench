@@ -1,3 +1,6 @@
+#define CL_USE_DEPRECATED_OPENCL_1_1_APIS
+#include <CL/cl.h>
+#undef CL_VERSION_1_2
 #include <boost/compute/container/vector.hpp>
 #include <boost/compute/algorithm/copy.hpp>
 #include <boost/compute/algorithm/exclusive_scan.hpp>
@@ -193,7 +196,7 @@ public:
 /************************************************************************/
 
 template<typename T>
-static void time_algorithm(T &&alg, int iter)
+static void time_algorithm(T &&alg, size_t N, int iter)
 {
     // Warmup
     alg.run();
@@ -205,27 +208,30 @@ static void time_algorithm(T &&alg, int iter)
     auto stop = clock_type::now();
 
     std::chrono::duration<double> elapsed(stop - start);
-    std::cout << alg.name() << ": " << elapsed.count() << '\n';
+    double time = elapsed.count();
+    double rate = (double) N * iter / time / 1e6;
+    std::cout << alg.name() << ": " << time << " (" << rate << " M/s)\n";
 }
 
 int main()
 {
-    const int iter = 10;
-    std::vector<cl_int> h_a(2000000);
+    const int iter = 16;
+    const int N = 16 * 1024 * 1024;
+    std::vector<cl_int> h_a(N);
     for (std::size_t i = 0; i < h_a.size(); i++)
         h_a[i] = i;
 
-    time_algorithm(compute_scan<cl_int>(h_a), iter);
-    time_algorithm(vex_scan<cl_int>(h_a), iter);
-    time_algorithm(vex_clogs_scan<cl_int>(h_a), iter);
-    time_algorithm(clogs_scan<cl_int>(h_a), iter);
-    time_algorithm(serial_scan<cl_int>(h_a), iter);
-    time_algorithm(parallel_scan<cl_int>(h_a), iter);
+    time_algorithm(compute_scan<cl_int>(h_a), N, iter);
+    time_algorithm(vex_scan<cl_int>(h_a), N, iter);
+    time_algorithm(vex_clogs_scan<cl_int>(h_a), N, iter);
+    time_algorithm(clogs_scan<cl_int>(h_a), N, iter);
+    time_algorithm(serial_scan<cl_int>(h_a), N, iter);
+    time_algorithm(parallel_scan<cl_int>(h_a), N, iter);
 
-    std::vector<cl_uint> rnd(20000000);
+    std::vector<cl_uint> rnd(N);
     for (std::size_t i = 0; i < rnd.size(); i++)
         rnd[i] = (cl_uint) i * 0x9E3779B9;
-    time_algorithm(vex_sort<cl_uint>(rnd), iter);
-    time_algorithm(clogs_sort<cl_uint>(rnd), iter);
+    time_algorithm(vex_sort<cl_uint>(rnd), N, iter);
+    time_algorithm(clogs_sort<cl_uint>(rnd), N, iter);
     return 0;
 }
