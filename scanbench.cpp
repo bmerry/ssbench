@@ -10,6 +10,7 @@
 #include <vector>
 #include <iostream>
 #include <chrono>
+#include <omp.h>
 #include <vexcl/vexcl.hpp>
 #include <vexcl/external/clogs.hpp>
 #include <clogs/scan.h>
@@ -150,6 +151,67 @@ public:
     void finish() {};
 };
 
+template<typename T>
+class my_parallel_scan
+{
+private:
+    std::vector<T> a;
+    std::vector<T> out;
+public:
+    my_parallel_scan(const std::vector<T> &h_a) : a(h_a), out(h_a.size()) {}
+
+    std::string name() const { return "my parallel scan"; }
+    void run()
+    {
+        std::size_t threads;
+#pragma omp parallel
+        {
+#pragma omp single
+            {
+                threads = omp_get_num_threads();
+            }
+        }
+
+        const std::size_t chunk = 4 * 1024 * 1024 / sizeof(T);
+        T reduced[threads];
+        T carry{};
+#pragma omp parallel
+        {
+            std::size_t tid = omp_get_thread_num();
+            auto begin = a.begin();
+            for (std::size_t start = 0; start < a.size(); start += chunk)
+            {
+                std::size_t len = std::min(a.size() - start, chunk);
+                auto p = begin + (start + tid * len / threads);
+                auto q = begin + (start + (tid + 1) * len / threads);
+                reduced[tid] = accumulate(p, q, T());
+#pragma omp barrier
+#pragma omp single
+                {
+                    T sum = carry;
+                    for (std::size_t i = 0; i < threads; i++)
+                    {
+                        T next = sum + reduced[i];
+                        reduced[i] = sum;
+                        sum = next;
+                    }
+                    carry = sum;
+                }
+
+                T sum = reduced[tid];
+                for (auto i = p; i != q; ++i)
+                {
+                    T tmp = sum;
+                    sum += *p;
+                    *p = tmp;
+                }
+            }
+        }
+    }
+
+    void finish() {}
+};
+
 /************************************************************************/
 
 template<typename T>
@@ -267,6 +329,7 @@ int main()
     time_algorithm(clogs_scan<cl_int>(h_a), N, iter);
     time_algorithm(serial_scan<cl_int>(h_a), N, iter);
     time_algorithm(parallel_scan<cl_int>(h_a), N, iter);
+    time_algorithm(my_parallel_scan<cl_int>(h_a), N, iter);
 
     std::vector<cl_uint> rnd(N);
     for (std::size_t i = 0; i < rnd.size(); i++)
