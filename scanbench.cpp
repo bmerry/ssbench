@@ -13,6 +13,7 @@
 #include <vexcl/vexcl.hpp>
 #include <vexcl/external/clogs.hpp>
 #include <clogs/scan.h>
+#include "scanbench_cuda.h"
 
 typedef std::chrono::high_resolution_clock clock_type;
 namespace compute = boost::compute;
@@ -265,6 +266,7 @@ int main()
     time_algorithm(vex_scan<cl_int>(h_a), N, iter);
     time_algorithm(vex_clogs_scan<cl_int>(h_a), N, iter);
     time_algorithm(clogs_scan<cl_int>(h_a), N, iter);
+    time_algorithm(thrust_scan<cl_int>(h_a), N, iter);
     time_algorithm(serial_scan<cl_int>(h_a), N, iter);
     time_algorithm(parallel_scan<cl_int>(h_a), N, iter);
 
@@ -273,6 +275,7 @@ int main()
         rnd[i] = (cl_uint) i * 0x9E3779B9;
     time_algorithm(vex_sort<cl_uint>(rnd), N, iter);
     time_algorithm(clogs_sort<cl_uint>(rnd), N, iter);
+    time_algorithm(thrust_sort<cl_uint>(rnd), N, iter);
     time_algorithm(serial_sort<cl_uint>(rnd), N, iter);
     time_algorithm(parallel_sort<cl_uint>(rnd), N, iter);
     return 0;
