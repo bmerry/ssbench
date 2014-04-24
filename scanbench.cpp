@@ -177,7 +177,7 @@ static void time_algorithm(T &&alg, size_t N, int iter)
     std::chrono::duration<double> elapsed(stop - start);
     double time = elapsed.count();
     double rate = (double) N * iter / time / 1e6;
-    std::cout << alg.name() << ": " << time << " (" << rate << " M/s)\n";
+    std::cout << rate << " M/s\t" << time << "\t" << alg.name() << '\n';
 }
 
 int main()
