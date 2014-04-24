@@ -1,3 +1,6 @@
+#ifndef SCANBENCH_COMPUTE_H
+#define SCANBENCH_COMPUTE_H
+
 #include <vector>
 #include <string>
 #include <memory>
@@ -33,3 +36,5 @@ public:
     std::string name() const { return "compute::exclusive_scan"; }
     void run();
 };
+
+#endif

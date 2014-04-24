@@ -11,58 +11,14 @@
 #include <iostream>
 #include <iomanip>
 #include <chrono>
-#include <clogs/scan.h>
-#include <vexcl/external/clogs.hpp> // TODO: eliminate: needed only for introspection
 #include "scanbench_cuda.h"
 #include "scanbench_vex.h"
 #include "scanbench_compute.h"
+#include "scanbench_clogs.h"
 
 typedef std::chrono::high_resolution_clock clock_type;
 
-class clogs_algorithm
-{
-protected:
-    cl::Context ctx;
-    cl::Device device;
-    cl::CommandQueue queue;
-
-    clogs_algorithm()
-        : ctx(cl::Context::getDefault()),
-        device(cl::Device::getDefault()),
-        queue(cl::CommandQueue::getDefault())
-    {
-    }
-
-public:
-    void finish() { queue.finish(); }
-};
-
 /************************************************************************/
-
-template<typename T>
-class clogs_scan : public clogs_algorithm
-{
-private:
-    std::size_t elements;
-    cl::Buffer d_a;
-    cl::Buffer d_scan;
-    clogs::Scan scan;
-
-public:
-    clogs_scan(const std::vector<T> &h_a)
-        : elements(h_a.size()),
-        scan(ctx, device, vex::clogs::clogs_type<T>::type())
-    {
-        std::vector<T> &h_a_nc = const_cast<std::vector<T> &>(h_a);
-        cl::Context ctx = cl::Context::getDefault();
-
-        d_a = cl::Buffer(h_a_nc.begin(), h_a_nc.end(), false);
-        d_scan = cl::Buffer(ctx, CL_MEM_READ_WRITE, elements * sizeof(T));
-    }
-
-    std::string name() const { return "clogs::Scan"; }
-    void run() { scan.enqueue(queue, d_a, d_scan, elements); }
-};
 
 template<typename T>
 class serial_scan
@@ -93,34 +49,6 @@ public:
 };
 
 /************************************************************************/
-
-template<typename T>
-class clogs_sort : public clogs_algorithm
-{
-private:
-    std::size_t elements;
-    cl::Buffer d_a;
-    cl::Buffer d_target;
-    clogs::Radixsort sort;
-
-public:
-    clogs_sort(const std::vector<T> &h_a)
-        : elements(h_a.size()),
-        d_a(ctx, CL_MEM_READ_WRITE, elements * sizeof(T)),
-        d_target(ctx, CL_MEM_READ_WRITE, elements * sizeof(T)),
-        sort(ctx, device, vex::clogs::clogs_type<T>::type())
-    {
-        queue.enqueueWriteBuffer(d_a, CL_TRUE, 0, elements * sizeof(T), h_a.data());
-    }
-
-    std::string name() const { return "clogs::Radixsort"; }
-
-    void run()
-    {
-        queue.enqueueCopyBuffer(d_a, d_target, 0, 0, elements * sizeof(T));
-        sort.enqueue(queue, d_target, cl::Buffer(), elements);
-    }
-};
 
 template<typename T>
 class serial_sort

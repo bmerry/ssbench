@@ -3,7 +3,7 @@ NVCCFLAGS = -arch sm_20
 CXX = g++
 CXXFLAGS = -D__CL_ENABLE_EXCEPTIONS -fopenmp -Wall -Wno-unused-local-typedefs -g -O3 -std=c++11 -I$(HOME)/src/compute/include -I$(HOME)/devel/vexcl
 LDFLAGS = -lboost_system -lclogs -lOpenCL -Xcompiler -fopenmp
-CXX_SOURCES = scanbench.cpp scanbench_vex.cpp scanbench_compute.cpp
+CXX_SOURCES = scanbench.cpp scanbench_vex.cpp scanbench_compute.cpp scanbench_clogs.cpp
 CU_SOURCES = scanbench_cuda.cu
 OBJECTS = $(patsubst %.cpp, %.o, $(CXX_SOURCES)) $(patsubst %.cu, %.o, $(CU_SOURCES))
 

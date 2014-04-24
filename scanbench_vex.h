@@ -1,3 +1,6 @@
+#ifndef SCANBENCH_VEX_H
+#define SCANBENCH_VEX_H
+
 #include <vector>
 #include <string>
 #include <memory>
@@ -60,3 +63,5 @@ public:
     std::string name() const { return "vex::sort"; }
     void run();
 };
+
+#endif
