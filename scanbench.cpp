@@ -2,10 +2,6 @@
 #include <iostream>
 #include <iomanip>
 #include <chrono>
-#include <omp.h>
-#include <vexcl/vexcl.hpp>
-#include <vexcl/external/clogs.hpp>
-#include <clogs/scan.h>
 #include <cstdint>
 #include "scanbench_cuda.h"
 #include "scanbench_vex.h"
@@ -60,7 +56,7 @@ int main()
 #if USE_CPU
     time_algorithm(serial_scan<std::int32_t>(h_a), N, iter);
     time_algorithm(parallel_scan<std::int32_t>(h_a), N, iter);
-    time_algorithm(my_parallel_scan<cl_int>(h_a), N, iter);
+    time_algorithm(my_parallel_scan<std::int32_t>(h_a), N, iter);
 #endif
 
     std::cout << "\n";
