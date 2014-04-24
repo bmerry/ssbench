@@ -10,28 +10,13 @@
 #include <vector>
 #include <iostream>
 #include <chrono>
-#include <vexcl/vexcl.hpp>
-#include <vexcl/external/clogs.hpp>
 #include <clogs/scan.h>
+#include <vexcl/external/clogs.hpp> // TODO: eliminate: needed only for introspection
 #include "scanbench_cuda.h"
+#include "scanbench_vex.h"
 
 typedef std::chrono::high_resolution_clock clock_type;
 namespace compute = boost::compute;
-
-class vex_algorithm
-{
-protected:
-    vex::Context ctx;
-
-    vex_algorithm() : ctx(vex::Filter::Position(0))
-    {
-        if (!ctx)
-            throw std::runtime_error("No device found for vex");
-    }
-
-public:
-    void finish() { ctx.finish(); }
-};
 
 class clogs_algorithm
 {
@@ -71,31 +56,6 @@ public:
     std::string name() const { return "compute::exclusive_scan"; }
     void run() { compute::exclusive_scan(d_a.begin(), d_a.end(), d_scan.begin()); }
     void finish() { queue.finish(); }
-};
-
-template<typename T>
-class vex_scan : public vex_algorithm
-{
-protected:
-    vex::vector<T> d_a, d_scan;
-
-public:
-    vex_scan(const std::vector<T> &h_a)
-        : d_a(vex::vector<T>(ctx, h_a)),
-        d_scan(vex::vector<T>(ctx, h_a.size())) {}
-
-    std::string name() const { return "vex::exclusive_scan"; }
-    void run() { vex::exclusive_scan(d_a, d_scan); }
-};
-
-template<typename T>
-class vex_clogs_scan : public vex_scan<T>
-{
-public:
-    vex_clogs_scan(const std::vector<T> &h_a) : vex_scan<T>(h_a) {}
-
-    std::string name() const { return "vex::clogs::exclusive_scan"; }
-    void run() { vex::clogs::exclusive_scan(this->d_a, this->d_scan); }
 };
 
 template<typename T>
@@ -152,20 +112,6 @@ public:
 };
 
 /************************************************************************/
-
-template<typename T>
-class vex_sort : public vex_algorithm
-{
-private:
-    vex::vector<T> d_a;
-    vex::vector<T> d_target;
-
-public:
-    vex_sort(const std::vector<T> &h_a) : d_a(ctx, h_a), d_target(ctx, h_a.size()) {}
-
-    std::string name() const { return "vex::sort"; }
-    void run() { d_target = d_a; vex::sort(d_target); }
-};
 
 template<typename T>
 class clogs_sort : public clogs_algorithm
