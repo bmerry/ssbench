@@ -9,6 +9,7 @@
 #include <numeric>
 #include <vector>
 #include <iostream>
+#include <iomanip>
 #include <chrono>
 #include <clogs/scan.h>
 #include <vexcl/external/clogs.hpp> // TODO: eliminate: needed only for introspection
@@ -177,7 +178,10 @@ static void time_algorithm(T &&alg, size_t N, int iter)
     std::chrono::duration<double> elapsed(stop - start);
     double time = elapsed.count();
     double rate = (double) N * iter / time / 1e6;
-    std::cout << rate << " M/s\t" << time << "\t" << alg.name() << '\n';
+    std::cout << std::setw(20) << std::fixed << std::setprecision(1);
+    std::cout << rate << " M/s\t";
+    std::cout << std::setw(0) << std::setprecision(6);
+    std::cout << time << "\t" << alg.name() << '\n';
 }
 
 int main()
@@ -195,6 +199,8 @@ int main()
     time_algorithm(thrust_scan<cl_int>(h_a), N, iter);
     time_algorithm(serial_scan<cl_int>(h_a), N, iter);
     time_algorithm(parallel_scan<cl_int>(h_a), N, iter);
+
+    std::cout << "\n";
 
     std::vector<cl_uint> rnd(N);
     for (std::size_t i = 0; i < rnd.size(); i++)
