@@ -1,6 +1,3 @@
-#include <parallel/numeric>
-#include <parallel/algorithm>
-#include <numeric>
 #include <vector>
 #include <iostream>
 #include <iomanip>
@@ -14,142 +11,9 @@
 #include "scanbench_vex.h"
 #include "scanbench_compute.h"
 #include "scanbench_clogs.h"
+#include "scanbench_cpu.h"
 
 typedef std::chrono::high_resolution_clock clock_type;
-
-/************************************************************************/
-
-template<typename T>
-class serial_scan
-{
-private:
-    std::vector<T> a;
-    std::vector<T> out;
-public:
-    serial_scan(const std::vector<T> &h_a) : a(h_a), out(h_a.size()) {}
-
-    std::string name() const { return "serial scan"; }
-    void run() { std::partial_sum(a.begin(), a.end(), out.begin()); }
-    void finish() {};
-};
-
-template<typename T>
-class parallel_scan
-{
-private:
-    std::vector<T> a;
-    std::vector<T> out;
-public:
-    parallel_scan(const std::vector<T> &h_a) : a(h_a), out(h_a.size()) {}
-
-    std::string name() const { return "parallel scan"; }
-    void run() { __gnu_parallel::partial_sum(a.begin(), a.end(), out.begin()); }
-    void finish() {};
-};
-
-template<typename T>
-class my_parallel_scan
-{
-private:
-    std::vector<T> a;
-    std::vector<T> out;
-public:
-    my_parallel_scan(const std::vector<T> &h_a) : a(h_a), out(h_a.size()) {}
-
-    std::string name() const { return "my parallel scan"; }
-    void run()
-    {
-        std::size_t threads;
-#pragma omp parallel
-        {
-#pragma omp single
-            {
-                threads = omp_get_num_threads();
-            }
-        }
-
-        const std::size_t chunk = 4 * 1024 * 1024 / sizeof(T);
-        T reduced[threads];
-        T carry{};
-#pragma omp parallel
-        {
-            std::size_t tid = omp_get_thread_num();
-            auto begin = a.begin();
-            for (std::size_t start = 0; start < a.size(); start += chunk)
-            {
-                std::size_t len = std::min(a.size() - start, chunk);
-                auto p = begin + (start + tid * len / threads);
-                auto q = begin + (start + (tid + 1) * len / threads);
-                reduced[tid] = accumulate(p, q, T());
-#pragma omp barrier
-#pragma omp single
-                {
-                    T sum = carry;
-                    for (std::size_t i = 0; i < threads; i++)
-                    {
-                        T next = sum + reduced[i];
-                        reduced[i] = sum;
-                        sum = next;
-                    }
-                    carry = sum;
-                }
-
-                T sum = reduced[tid];
-                for (auto i = p; i != q; ++i)
-                {
-                    T tmp = sum;
-                    sum += *p;
-                    *p = tmp;
-                }
-            }
-        }
-    }
-
-    void finish() {}
-};
-
-/************************************************************************/
-
-template<typename T>
-class serial_sort
-{
-protected:
-    std::vector<T> d_a;
-    std::vector<T> d_target;
-
-public:
-    serial_sort(const std::vector<T> &h_a)
-        : d_a(h_a)
-    {
-    }
-
-    std::string name() const { return "serial sort"; }
-
-    void run()
-    {
-        d_target = d_a;
-        std::sort(d_target.begin(), d_target.end());
-    }
-
-    void finish() {}
-};
-
-template<typename T>
-class parallel_sort : public serial_sort<T>
-{
-public:
-    using serial_sort<T>::serial_sort;
-
-    std::string name() const { return "parallel sort"; }
-
-    void run()
-    {
-        this->d_target = this->d_a;
-        __gnu_parallel::sort(this->d_target.begin(), this->d_target.end());
-    }
-};
-
-/************************************************************************/
 
 template<typename T>
 static void time_algorithm(T &&alg, size_t N, int iter)
@@ -193,9 +57,11 @@ int main()
 #if USE_CUDA
     time_algorithm(thrust_scan<std::int32_t>(h_a), N, iter);
 #endif
+#if USE_CPU
     time_algorithm(serial_scan<std::int32_t>(h_a), N, iter);
     time_algorithm(parallel_scan<std::int32_t>(h_a), N, iter);
     time_algorithm(my_parallel_scan<cl_int>(h_a), N, iter);
+#endif
 
     std::cout << "\n";
 
@@ -211,7 +77,9 @@ int main()
 #if USE_CUDA
     time_algorithm(thrust_sort<std::uint32_t>(rnd), N, iter);
 #endif
+#if USE_CPU
     time_algorithm(serial_sort<std::uint32_t>(rnd), N, iter);
     time_algorithm(parallel_sort<std::uint32_t>(rnd), N, iter);
+#endif
     return 0;
 }
