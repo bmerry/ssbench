@@ -2,8 +2,25 @@
 #include <CL/cl.h>
 #undef CL_VERSION_1_2
 #include <clogs/scan.h>
-#include <vexcl/external/clogs.hpp> // TODO: eliminate: needed only for introspection
+#include <clogs/radixsort.h>
 #include "scanbench_clogs.h"
+
+template<typename T>
+struct clogs_type
+{
+};
+
+template<>
+struct clogs_type<cl_int>
+{
+    static clogs::Type type() { return clogs::TYPE_INT; }
+};
+
+template<>
+struct clogs_type<cl_uint>
+{
+    static clogs::Type type() { return clogs::TYPE_UINT; }
+};
 
 struct clogs_algorithm::resources_t
 {
@@ -49,7 +66,7 @@ struct clogs_scan<T>::data_t
             h_a.size() * sizeof(T),
             const_cast<T *>(h_a.data())),
         d_scan(ctx, CL_MEM_READ_WRITE, elements * sizeof(T)),
-        scan(ctx, device, vex::clogs::clogs_type<T>::type())
+        scan(ctx, device, clogs_type<T>::type())
     {
     }
 };
@@ -87,7 +104,7 @@ struct clogs_sort<T>::data_t
         : d_a(ctx, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, elements * sizeof(T),
               const_cast<T *>(h_a.data())),
         d_target(ctx, CL_MEM_READ_WRITE, elements * sizeof(T)),
-        sort(ctx, device, vex::clogs::clogs_type<T>::type())
+        sort(ctx, device, clogs_type<T>::type())
     {
     }
 };
