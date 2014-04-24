@@ -57,6 +57,9 @@ void vex_clogs_scan<T>::run()
     vex::clogs::exclusive_scan(this->data->d_a, this->data->d_scan);
 }
 
+template class vex_scan<cl_int>;
+template class vex_clogs_scan<cl_int>;
+
 /************************************************************************/
 
 template<typename T>
@@ -88,3 +91,5 @@ template<typename T>
 vex_sort<T>::~vex_sort()
 {
 }
+
+template class vex_sort<cl_uint>;
