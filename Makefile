@@ -10,6 +10,7 @@ CXX = g++
 NVCC = nvcc
 NVCCFLAGS = -arch sm_20
 CXXFLAGS = -g -D__CL_ENABLE_EXCEPTIONS -fopenmp -Wall -Wno-unused-local-typedefs -O3 -std=c++11
+CXXFLAGS += -DUSE_CUDA=$(USE_CUDA) -DUSE_CLOGS=$(USE_CLOGS) -DUSE_VEX=$(USE_VEX) -DUSE_COMPUTE=$(USE_COMPUTE)
 LDFLAGS = -g $(LDFLAG_PREFIX) -fopenmp
 
 CXX_SOURCES = scanbench.cpp
