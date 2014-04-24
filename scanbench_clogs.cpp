@@ -19,6 +19,15 @@ struct clogs_algorithm::resources_t
     }
 };
 
+clogs_algorithm::clogs_algorithm()
+    : resources(new resources_t())
+{
+}
+
+clogs_algorithm::~clogs_algorithm()
+{
+}
+
 void clogs_algorithm::finish()
 {
     resources->queue.finish();
@@ -37,7 +46,8 @@ struct clogs_scan<T>::data_t
     data_t(const cl::Context &ctx, const cl::Device &device, const std::vector<T> &h_a)
         : elements(h_a.size()),
         d_a(ctx, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
-            h_a.size() * sizeof(T), h_a.data()),
+            h_a.size() * sizeof(T),
+            const_cast<T *>(h_a.data())),
         d_scan(ctx, CL_MEM_READ_WRITE, elements * sizeof(T)),
         scan(ctx, device, vex::clogs::clogs_type<T>::type())
     {
@@ -46,7 +56,7 @@ struct clogs_scan<T>::data_t
 
 template<typename T>
 clogs_scan<T>::clogs_scan(const std::vector<T> &h_a)
-    : data(new data_t(resources->ctx, resources->device))
+    : data(new data_t(resources->ctx, resources->device, h_a))
 {
 }
 
@@ -61,6 +71,8 @@ void clogs_scan<T>::run()
     data->scan.enqueue(resources->queue, data->d_a, data->d_scan, data->elements);
 }
 
+template class clogs_scan<cl_int>;
+
 /************************************************************************/
 
 template<typename T>
@@ -73,7 +85,7 @@ struct clogs_sort<T>::data_t
 
     data_t(const cl::Context &ctx, const cl::Device &device, const std::vector<T> &h_a)
         : d_a(ctx, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, elements * sizeof(T),
-              h_a.data()),
+              const_cast<T *>(h_a.data())),
         d_target(ctx, CL_MEM_READ_WRITE, elements * sizeof(T)),
         sort(ctx, device, vex::clogs::clogs_type<T>::type())
     {
@@ -97,3 +109,5 @@ void clogs_sort<T>::run()
     resources->queue.enqueueCopyBuffer(data->d_a, data->d_target, 0, 0, data->elements * sizeof(T));
     data->sort.enqueue(resources->queue, data->d_target, cl::Buffer(), data->elements);
 }
+
+template class clogs_sort<cl_uint>;
