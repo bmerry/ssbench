@@ -26,7 +26,7 @@ else
 endif
 
 ifeq ($(USE_CLOGS),1)
-    LDFLAGS += -lclogs
+    LDFLAGS += -lclogs -lOpenCL
     CXX_SOURCES += scanbench_clogs.cpp
     CXXFLAGS += -DUSE_CLOGS=1
 endif
