@@ -1,9 +1,3 @@
-#define CL_USE_DEPRECATED_OPENCL_1_1_APIS
-#include <CL/cl.h>
-#undef CL_VERSION_1_2
-#include <boost/compute/container/vector.hpp>
-#include <boost/compute/algorithm/copy.hpp>
-#include <boost/compute/algorithm/exclusive_scan.hpp>
 #include <parallel/numeric>
 #include <parallel/algorithm>
 #include <numeric>
@@ -11,6 +5,7 @@
 #include <iostream>
 #include <iomanip>
 #include <chrono>
+#include <cstdint>
 #include "scanbench_cuda.h"
 #include "scanbench_vex.h"
 #include "scanbench_compute.h"
@@ -116,27 +111,27 @@ int main()
 {
     const int iter = 16;
     const int N = 16 * 1024 * 1024;
-    std::vector<cl_int> h_a(N);
+    std::vector<std::int32_t> h_a(N);
     for (std::size_t i = 0; i < h_a.size(); i++)
         h_a[i] = i;
 
-    time_algorithm(compute_scan<cl_int>(h_a), N, iter);
-    time_algorithm(vex_scan<cl_int>(h_a), N, iter);
-    time_algorithm(vex_clogs_scan<cl_int>(h_a), N, iter);
-    time_algorithm(clogs_scan<cl_int>(h_a), N, iter);
-    time_algorithm(thrust_scan<cl_int>(h_a), N, iter);
-    time_algorithm(serial_scan<cl_int>(h_a), N, iter);
-    time_algorithm(parallel_scan<cl_int>(h_a), N, iter);
+    time_algorithm(compute_scan<std::int32_t>(h_a), N, iter);
+    time_algorithm(vex_scan<std::int32_t>(h_a), N, iter);
+    time_algorithm(vex_clogs_scan<std::int32_t>(h_a), N, iter);
+    time_algorithm(clogs_scan<std::int32_t>(h_a), N, iter);
+    time_algorithm(thrust_scan<std::int32_t>(h_a), N, iter);
+    time_algorithm(serial_scan<std::int32_t>(h_a), N, iter);
+    time_algorithm(parallel_scan<std::int32_t>(h_a), N, iter);
 
     std::cout << "\n";
 
-    std::vector<cl_uint> rnd(N);
+    std::vector<std::uint32_t> rnd(N);
     for (std::size_t i = 0; i < rnd.size(); i++)
-        rnd[i] = (cl_uint) i * 0x9E3779B9;
-    time_algorithm(vex_sort<cl_uint>(rnd), N, iter);
-    time_algorithm(clogs_sort<cl_uint>(rnd), N, iter);
-    time_algorithm(thrust_sort<cl_uint>(rnd), N, iter);
-    time_algorithm(serial_sort<cl_uint>(rnd), N, iter);
-    time_algorithm(parallel_sort<cl_uint>(rnd), N, iter);
+        rnd[i] = (std::uint32_t) i * 0x9E3779B9;
+    time_algorithm(vex_sort<std::uint32_t>(rnd), N, iter);
+    time_algorithm(clogs_sort<std::uint32_t>(rnd), N, iter);
+    time_algorithm(thrust_sort<std::uint32_t>(rnd), N, iter);
+    time_algorithm(serial_sort<std::uint32_t>(rnd), N, iter);
+    time_algorithm(parallel_sort<std::uint32_t>(rnd), N, iter);
     return 0;
 }
