@@ -39,6 +39,19 @@ int main()
     std::vector<std::int32_t> h_a(N);
     for (std::size_t i = 0; i < h_a.size(); i++)
         h_a[i] = i;
+    std::vector<std::uint32_t> rnd(N);
+    for (std::size_t i = 0; i < rnd.size(); i++)
+        rnd[i] = (std::uint32_t) i * 0x9E3779B9;
+
+#if USE_CPU
+    time_algorithm(serial_scan<std::int32_t>(h_a), N, iter);
+    time_algorithm(parallel_scan<std::int32_t>(h_a), N, iter);
+    time_algorithm(my_parallel_scan<std::int32_t>(h_a), N, iter);
+    time_algorithm(serial_sort<std::uint32_t>(rnd), N, iter);
+    time_algorithm(parallel_sort<std::uint32_t>(rnd), N, iter);
+#endif
+
+    std::cout << "\n";
 
 #if USE_COMPUTE
     time_algorithm(compute_scan<std::int32_t>(h_a), N, iter);
@@ -53,17 +66,9 @@ int main()
 #if USE_CUDA
     time_algorithm(thrust_scan<std::int32_t>(h_a), N, iter);
 #endif
-#if USE_CPU
-    time_algorithm(serial_scan<std::int32_t>(h_a), N, iter);
-    time_algorithm(parallel_scan<std::int32_t>(h_a), N, iter);
-    time_algorithm(my_parallel_scan<std::int32_t>(h_a), N, iter);
-#endif
 
     std::cout << "\n";
 
-    std::vector<std::uint32_t> rnd(N);
-    for (std::size_t i = 0; i < rnd.size(); i++)
-        rnd[i] = (std::uint32_t) i * 0x9E3779B9;
 #if USE_VEX
     time_algorithm(vex_sort<std::uint32_t>(rnd), N, iter);
 #endif
@@ -72,10 +77,6 @@ int main()
 #endif
 #if USE_CUDA
     time_algorithm(thrust_sort<std::uint32_t>(rnd), N, iter);
-#endif
-#if USE_CPU
-    time_algorithm(serial_sort<std::uint32_t>(rnd), N, iter);
-    time_algorithm(parallel_sort<std::uint32_t>(rnd), N, iter);
 #endif
     return 0;
 }
