@@ -14,9 +14,9 @@
 #include <vexcl/external/clogs.hpp> // TODO: eliminate: needed only for introspection
 #include "scanbench_cuda.h"
 #include "scanbench_vex.h"
+#include "scanbench_compute.h"
 
 typedef std::chrono::high_resolution_clock clock_type;
-namespace compute = boost::compute;
 
 class clogs_algorithm
 {
@@ -37,26 +37,6 @@ public:
 };
 
 /************************************************************************/
-
-template<typename T>
-class compute_scan
-{
-private:
-    compute::command_queue queue;
-    compute::vector<T> d_a;
-    compute::vector<T> d_scan;
-public:
-    compute_scan(const std::vector<T> &h_a)
-        : d_a(h_a), d_scan(h_a.size())
-    {
-        compute::device device = compute::system::default_device();
-        queue = compute::system::default_queue();
-    }
-
-    std::string name() const { return "compute::exclusive_scan"; }
-    void run() { compute::exclusive_scan(d_a.begin(), d_a.end(), d_scan.begin()); }
-    void finish() { queue.finish(); }
-};
 
 template<typename T>
 class clogs_scan : public clogs_algorithm
