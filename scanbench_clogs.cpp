@@ -88,6 +88,14 @@ void clogs_scan<T>::run()
     data->scan.enqueue(resources->queue, data->d_a, data->d_scan, data->elements);
 }
 
+template<typename T>
+std::vector<T> clogs_scan<T>::get() const
+{
+    std::vector<T> ans(data->elements);
+    cl::copy(data->d_scan, ans.begin(), ans.end());
+    return ans;
+}
+
 template class clogs_scan<cl_int>;
 
 /************************************************************************/
@@ -126,6 +134,14 @@ void clogs_sort<T>::run()
 {
     resources->queue.enqueueCopyBuffer(data->d_a, data->d_target, 0, 0, data->elements * sizeof(T));
     data->sort.enqueue(resources->queue, data->d_target, cl::Buffer(), data->elements);
+}
+
+template<typename T>
+std::vector<T> clogs_sort<T>::get() const
+{
+    std::vector<T> ans(data->elements);
+    cl::copy(data->d_target, ans.begin(), ans.end());
+    return ans;
 }
 
 template class clogs_sort<cl_uint>;

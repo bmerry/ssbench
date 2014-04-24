@@ -10,20 +10,20 @@
 template<typename T>
 void serial_scan<T>::run()
 {
-    std::partial_sum(this->a.begin(), this->a.end(), this->out.begin());
+    std::partial_sum(this->a.begin(), this->a.end() - 1, this->out.begin() + 1);
+    this->out[0] = T();
 }
 
 template<typename T>
 void parallel_scan<T>::run()
 {
-    __gnu_parallel::partial_sum(this->a.begin(), this->a.end(), this->out.begin());
+    __gnu_parallel::partial_sum(this->a.begin(), this->a.end() - 1, this->out.begin() + 1);
+    this->out[0] = T();
 }
 
 template<typename T>
 void my_parallel_scan<T>::run()
 {
-    // TODO: should write to out, not in-place?
-
     std::size_t threads;
 #pragma omp parallel
     {
@@ -33,19 +33,19 @@ void my_parallel_scan<T>::run()
         }
     }
 
-    const std::size_t chunk = 4 * 1024 * 1024 / sizeof(T);
+    const std::size_t chunk = 2 * 1024 * 1024 / sizeof(T);
     T reduced[threads];
     T carry{};
 #pragma omp parallel
     {
         std::size_t tid = omp_get_thread_num();
-        auto begin = this->a.begin();
+        auto in_begin = this->a.cbegin();
         for (std::size_t start = 0; start < this->a.size(); start += chunk)
         {
             std::size_t len = std::min(this->a.size() - start, chunk);
-            auto p = begin + (start + tid * len / threads);
-            auto q = begin + (start + (tid + 1) * len / threads);
-            reduced[tid] = accumulate(p, q, T());
+            std::size_t pofs = (start + tid * len / threads);
+            std::size_t qofs = (start + (tid + 1) * len / threads);
+            reduced[tid] = accumulate(in_begin + pofs, in_begin + qofs, T());
 #pragma omp barrier
 #pragma omp single
             {
@@ -60,11 +60,11 @@ void my_parallel_scan<T>::run()
             }
 
             T sum = reduced[tid];
-            for (auto i = p; i != q; ++i)
+            for (std::size_t i = pofs; i != qofs; ++i)
             {
                 T tmp = sum;
-                sum += *p;
-                *p = tmp;
+                sum += this->a[i];
+                this->out[i] = tmp;
             }
         }
     }

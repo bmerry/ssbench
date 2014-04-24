@@ -47,6 +47,14 @@ void vex_scan<T>::run()
 }
 
 template<typename T>
+std::vector<T> vex_scan<T>::get() const
+{
+    std::vector<T> ans(data->d_scan.size());
+    vex::copy(data->d_scan, ans);
+    return ans;
+}
+
+template<typename T>
 vex_scan<T>::~vex_scan()
 {
 }
@@ -85,6 +93,14 @@ void vex_sort<T>::run()
 {
     data->d_target = data->d_a;
     vex::sort(data->d_target);
+}
+
+template<typename T>
+std::vector<T> vex_sort<T>::get() const
+{
+    std::vector<T> ans(data->d_target.size());
+    vex::copy(data->d_target, ans);
+    return ans;
 }
 
 template<typename T>

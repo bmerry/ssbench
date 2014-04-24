@@ -29,6 +29,7 @@ public:
     ~clogs_scan();
     std::string name() const { return "clogs::Scan"; }
     void run();
+    std::vector<T> get() const;
 };
 
 template<typename T>
@@ -43,6 +44,7 @@ public:
     ~clogs_sort();
     std::string name() const { return "clogs::Radixsort"; }
     void run();
+    std::vector<T> get() const;
 };
 
 #endif

@@ -13,6 +13,7 @@ protected:
 public:
     cpu_scan(const std::vector<T> &h_a) : a(h_a), out(h_a.size()) {}
     void finish() {}
+    std::vector<T> get() const { return out; }
 };
 
 template<typename T>
@@ -60,6 +61,7 @@ public:
     }
 
     void finish() {}
+    std::vector<T> get() const { return target; }
 };
 
 template<typename T>

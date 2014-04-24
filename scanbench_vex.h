@@ -35,6 +35,7 @@ public:
     ~vex_scan();
     std::string name() const { return "vex::exclusive_scan"; }
     void run();
+    std::vector<T> get() const;
 };
 
 template<typename T>
@@ -62,6 +63,7 @@ public:
 
     std::string name() const { return "vex::sort"; }
     void run();
+    std::vector<T> get() const;
 };
 
 #endif
