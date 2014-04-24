@@ -101,9 +101,10 @@ struct clogs_sort<T>::data_t
     clogs::Radixsort sort;
 
     data_t(const cl::Context &ctx, const cl::Device &device, const std::vector<T> &h_a)
-        : d_a(ctx, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, elements * sizeof(T),
+        : elements(h_a.size()),
+        d_a(ctx, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, elements * sizeof(T),
               const_cast<T *>(h_a.data())),
-        d_target(ctx, CL_MEM_READ_WRITE, elements * sizeof(T)),
+        d_target(ctx, CL_MEM_READ_WRITE, h_a.size() * sizeof(T)),
         sort(ctx, device, clogs_type<T>::type())
     {
     }
