@@ -35,6 +35,7 @@ public:
     ~compute_scan();
     std::string name() const { return "compute::exclusive_scan"; }
     void run();
+    std::vector<T> get() const;
 };
 
 #endif

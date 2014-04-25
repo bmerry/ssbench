@@ -53,4 +53,15 @@ void compute_scan<T>::run()
     compute::exclusive_scan(data->d_a.begin(), data->d_a.end(), data->d_scan.begin());
 }
 
+template<typename T>
+std::vector<T> compute_scan<T>::get() const
+{
+    std::vector<T> ans(data->d_scan.size());
+    compute::copy(data->d_scan.begin(), data->d_scan.end(), ans.begin(), *queue);
+    return ans;
+}
+
 template class compute_scan<cl_int>;
+
+/************************************************************************/
+
