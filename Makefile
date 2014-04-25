@@ -1,4 +1,4 @@
-USE_CUDA ?= 1
+USE_THRUST ?= 1
 USE_CLOGS ?= 1
 USE_VEX ?= 1
 USE_COMPUTE ?= 1
@@ -15,7 +15,7 @@ LDFLAGS = -g
 
 CXX_SOURCES = scanbench.cpp
 
-ifeq ($(USE_CUDA),1)
+ifeq ($(USE_THRUST),1)
     NVCC = nvcc
     NVCCFLAGS = -arch sm_20
     LDFLAG_PREFIX = -Xcompiler
@@ -43,9 +43,9 @@ ifeq ($(USE_COMPUTE),1)
     CXX_SOURCES += scanbench_compute.cpp
 endif
 
-ifeq ($(USE_CUDA),1)
-    CXXFLAGS += -DUSE_CUDA=1
-    CU_SOURCES += scanbench_cuda.cu
+ifeq ($(USE_THRUST),1)
+    CXXFLAGS += -DUSE_THRUST=1
+    CU_SOURCES += scanbench_thrust.cu
 endif
 
 ifeq ($(USE_CPU),1)

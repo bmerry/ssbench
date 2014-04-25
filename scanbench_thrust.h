@@ -1,5 +1,5 @@
-#ifndef SCANBENCH_CUDA_H
-#define SCANBENCH_CUDA_H
+#ifndef SCANBENCH_THRUST_H
+#define SCANBENCH_THRUST_H
 
 #include <vector>
 #include <string>

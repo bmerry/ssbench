@@ -6,7 +6,7 @@
 #include <cassert>
 #include <algorithm>
 #include <numeric>
-#include "scanbench_cuda.h"
+#include "scanbench_thrust.h"
 #include "scanbench_vex.h"
 #include "scanbench_compute.h"
 #include "scanbench_clogs.h"
@@ -127,7 +127,7 @@ int main()
 #if USE_CLOGS
     time_algorithm(clogs_scan<std::int32_t>(h_a), vscan, N, iter);
 #endif
-#if USE_CUDA
+#if USE_THRUST
     time_algorithm(thrust_scan<std::int32_t>(h_a), vscan, N, iter);
 #endif
 
@@ -142,7 +142,7 @@ int main()
 #if USE_CLOGS
     time_algorithm(clogs_sort<std::uint32_t>(rnd), vsort, N, iter);
 #endif
-#if USE_CUDA
+#if USE_THRUST
     time_algorithm(thrust_sort<std::uint32_t>(rnd), vsort, N, iter);
 #endif
     return 0;
