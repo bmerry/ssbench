@@ -133,6 +133,9 @@ int main()
 
     std::cout << "\n";
 
+#if USE_COMPUTE
+    time_algorithm(compute_sort<std::uint32_t>(rnd), vsort, N, iter);
+#endif
 #if USE_VEX
     time_algorithm(vex_sort<std::uint32_t>(rnd), vsort, N, iter);
 #endif

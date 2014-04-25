@@ -4,6 +4,7 @@
 #include <boost/compute/container/vector.hpp>
 #include <boost/compute/algorithm/copy.hpp>
 #include <boost/compute/algorithm/exclusive_scan.hpp>
+#include <boost/compute/algorithm/sort.hpp>
 #include "scanbench_compute.h"
 
 namespace compute = boost::compute;
@@ -65,3 +66,42 @@ template class compute_scan<cl_int>;
 
 /************************************************************************/
 
+template<typename T>
+struct compute_sort<T>::data_t
+{
+    compute::vector<T> d_a;
+    compute::vector<T> d_target;
+
+    data_t(const std::vector<T> &h_a)
+        : d_a(h_a), d_target(h_a.size())
+    {
+    }
+};
+
+template<typename T>
+compute_sort<T>::compute_sort(const std::vector<T> &h_a)
+    : data(new data_t(h_a))
+{
+}
+
+template<typename T>
+compute_sort<T>::~compute_sort()
+{
+}
+
+template<typename T>
+void compute_sort<T>::run()
+{
+    data->d_target = data->d_a;
+    compute::sort(data->d_target.begin(), data->d_target.end());
+}
+
+template<typename T>
+std::vector<T> compute_sort<T>::get() const
+{
+    std::vector<T> ans(data->d_target.size());
+    compute::copy(data->d_target.begin(), data->d_target.end(), ans.begin(), *queue);
+    return ans;
+}
+
+template class compute_sort<cl_uint>;

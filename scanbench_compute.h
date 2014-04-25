@@ -38,4 +38,17 @@ public:
     std::vector<T> get() const;
 };
 
+template<typename T>
+class compute_sort : public compute_algorithm
+{
+private:
+    struct data_t;
+    std::unique_ptr<data_t> data;
+public:
+    compute_sort(const std::vector<T> &h_a);
+    ~compute_sort();
+    std::string name() const { return "compute::sort"; }
+    void run();
+    std::vector<T> get() const;
+};
 #endif

@@ -17,6 +17,7 @@ public:
     std::string name() const { return "thrust::exclusive_scan"; }
     void run();
     void finish();
+    std::vector<T> get() const;
     ~thrust_scan();
 };
 
@@ -33,6 +34,7 @@ public:
     std::string name() const { return "thrust::sort"; }
     void run();
     void finish();
+    std::vector<T> get() const;
     ~thrust_sort();
 };
 

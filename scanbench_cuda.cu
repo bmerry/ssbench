@@ -29,6 +29,14 @@ void thrust_scan<T>::run()
 }
 
 template<typename T>
+std::vector<T> thrust_scan<T>::get() const
+{
+    std::vector<T> ans(data->d_scan.size());
+    thrust::copy(data->d_scan.begin(), data->d_scan.end(), ans.begin());
+    return ans;
+}
+
+template<typename T>
 void thrust_scan<T>::finish()
 {
     cudaDeviceSynchronize();
@@ -65,6 +73,14 @@ void thrust_sort<T>::run()
 {
     data->d_target = data->d_a;
     thrust::sort(data->d_target.begin(), data->d_target.end());
+}
+
+template<typename T>
+std::vector<T> thrust_sort<T>::get() const
+{
+    std::vector<T> ans(data->d_target.size());
+    thrust::copy(data->d_target.begin(), data->d_target.end(), ans.begin());
+    return ans;
 }
 
 template<typename T>
