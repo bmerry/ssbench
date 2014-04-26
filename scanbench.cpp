@@ -11,7 +11,7 @@
 #include "scanbench_vex.h"
 #include "scanbench_compute.h"
 #include "scanbench_clogs.h"
-#include "scanbench_cpu.h"
+#include "scanbench.h"
 
 namespace po = boost::program_options;
 

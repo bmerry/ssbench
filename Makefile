@@ -10,7 +10,7 @@ COMPUTE_HOME ?= $(HOME)/src/compute
 CXX = g++
 NVCC = nvcc
 NVCCFLAGS = -arch sm_20
-CXXFLAGS = -g -D__CL_ENABLE_EXCEPTIONS -Wall -Wno-unused-local-typedefs -O3 -std=c++11
+CXXFLAGS = -g -D__CL_ENABLE_EXCEPTIONS -Wall -Wno-unused-local-typedefs -std=c++11
 LDFLAGS = -g -lboost_program_options
 
 CXX_SOURCES = scanbench.cpp
@@ -59,7 +59,7 @@ OBJECTS = $(patsubst %.cpp, %.o, $(CXX_SOURCES)) $(patsubst %.cu, %.o, $(CU_SOUR
 scanbench: $(OBJECTS) Makefile
 	$(LINK) -o $@ $(OBJECTS) $(LDFLAGS)
 
-%.o: %.cpp %.h
+%.o: %.cpp %.h scanbench.h
 	$(CXX) -c $< $(CXXFLAGS)
 
 scanbench.o: $(wildcard *.h) Makefile

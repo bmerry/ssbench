@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <numeric>
 #include <utility>
+#include <memory>
 #include <cassert>
 #include <iostream>
 
@@ -43,8 +44,8 @@ public:
     typedef T value_type;
 
     scan_algorithm(const std::vector<T> &in)
+        : expected(in.size())
     {
-        std::vector<T> expected(in.size());
         std::partial_sum(in.begin(), in.end() - 1, expected.begin() + 1);
         expected[0] = T();
     }
@@ -101,7 +102,7 @@ public:
     {
         auto f = [](Args... in) -> std::unique_ptr<A>
         {
-            return new S(in...);
+            return std::unique_ptr<A>(new S(in...));
         };
         add_factory(f);
     }
