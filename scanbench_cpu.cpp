@@ -70,9 +70,9 @@ void my_parallel_scan<T>::run()
     }
 }
 
-template class serial_scan<std::int32_t>;
-template class parallel_scan<std::int32_t>;
-template class my_parallel_scan<std::int32_t>;
+static register_scan_algorithm<serial_scan> register_serial_scan;
+static register_scan_algorithm<parallel_scan> register_parallel_scan;
+static register_scan_algorithm<my_parallel_scan> register_my_parallel_scan;
 
 /************************************************************************/
 
@@ -90,5 +90,5 @@ void parallel_sort<T>::run()
     __gnu_parallel::sort(this->target.begin(), this->target.end());
 }
 
-template class serial_sort<std::uint32_t>;
-template class parallel_sort<std::uint32_t>;
+static register_sort_algorithm<serial_sort> register_serial_sort;
+static register_sort_algorithm<parallel_sort> register_parallel_sort;

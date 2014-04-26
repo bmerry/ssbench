@@ -1,7 +1,7 @@
-USE_THRUST ?= 1
-USE_CLOGS ?= 1
-USE_VEX ?= 1
-USE_COMPUTE ?= 1
+USE_THRUST ?= 0
+USE_CLOGS ?= 0
+USE_VEX ?= 0
+USE_COMPUTE ?= 0
 USE_CPU ?= 1
 
 VEX_HOME ?= $(HOME)/devel/vexcl
@@ -11,7 +11,7 @@ CXX = g++
 NVCC = nvcc
 NVCCFLAGS = -arch sm_20
 CXXFLAGS = -g -D__CL_ENABLE_EXCEPTIONS -Wall -Wno-unused-local-typedefs -O3 -std=c++11
-LDFLAGS = -g
+LDFLAGS = -g -lboost_program_options
 
 CXX_SOURCES = scanbench.cpp
 

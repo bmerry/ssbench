@@ -3,17 +3,19 @@
 
 #include <vector>
 #include <string>
+#include "scanbench.h"
 
 template<typename T>
-class cpu_scan
+class cpu_scan : public scan_algorithm<T>
 {
 protected:
     std::vector<T> a;
     std::vector<T> out;
 public:
-    cpu_scan(const std::vector<T> &h_a) : a(h_a), out(h_a.size()) {}
-    void finish() {}
-    std::vector<T> get() const { return out; }
+    cpu_scan(const std::vector<T> &h_a) : scan_algorithm<T>(h_a), a(h_a), out(h_a.size()) {}
+    virtual std::string api() const override { return "cpu"; }
+    virtual void finish() override {}
+    virtual std::vector<T> get() const override { return out; }
 };
 
 template<typename T>
@@ -22,7 +24,7 @@ class serial_scan : public cpu_scan<T>
 public:
     using cpu_scan<T>::cpu_scan;
     std::string name() const { return "serial scan"; }
-    void run();
+    virtual void run() override;
 };
 
 template<typename T>
@@ -32,7 +34,7 @@ public:
     using cpu_scan<T>::cpu_scan;
 
     std::string name() const { return "parallel scan"; }
-    void run();
+    virtual void run() override;
 };
 
 template<typename T>
@@ -42,7 +44,7 @@ public:
     using cpu_scan<T>::cpu_scan;
 
     std::string name() const { return "my parallel scan"; }
-    void run();
+    virtual void run() override;
 };
 
 /************************************************************************/
