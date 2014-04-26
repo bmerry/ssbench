@@ -1,5 +1,5 @@
 USE_THRUST ?= 0
-USE_CLOGS ?= 0
+USE_CLOGS ?= 1
 USE_VEX ?= 1
 USE_COMPUTE ?= 1
 USE_CPU ?= 1
@@ -61,8 +61,6 @@ scanbench: $(OBJECTS) Makefile
 
 %.o: %.cpp %.h scanbench.h
 	$(CXX) -c $< $(CXXFLAGS)
-
-scanbench.o: $(wildcard *.h) Makefile
 
 %.o: %.cu
 	$(NVCC) -c $< $(NVCCFLAGS)

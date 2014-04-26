@@ -3,7 +3,7 @@
 #undef CL_VERSION_1_2
 #include <clogs/scan.h>
 #include <clogs/radixsort.h>
-#include "scanbench_clogs.h"
+#include "scanbench.h"
 
 template<typename T>
 struct clogs_type
@@ -22,13 +22,16 @@ struct clogs_type<cl_uint>
     static clogs::Type type() { return clogs::TYPE_UINT; }
 };
 
-struct clogs_algorithm::resources_t
+/************************************************************************/
+
+class clogs_algorithm
 {
+protected:
     cl::Context ctx;
     cl::Device device;
     cl::CommandQueue queue;
 
-    resources_t()
+    clogs_algorithm()
         : ctx(cl::Context::getDefault()),
         device(cl::Device::getDefault()),
         queue(cl::CommandQueue::getDefault())
@@ -36,32 +39,21 @@ struct clogs_algorithm::resources_t
     }
 };
 
-clogs_algorithm::clogs_algorithm()
-    : resources(new resources_t())
-{
-}
-
-clogs_algorithm::~clogs_algorithm()
-{
-}
-
-void clogs_algorithm::finish()
-{
-    resources->queue.finish();
-}
-
 /************************************************************************/
 
 template<typename T>
-struct clogs_scan<T>::data_t
+class clogs_scan : public scan_algorithm<T>, public clogs_algorithm
 {
+private:
     std::size_t elements;
     cl::Buffer d_a;
     cl::Buffer d_scan;
     clogs::Scan scan;
 
-    data_t(const cl::Context &ctx, const cl::Device &device, const std::vector<T> &h_a)
-        : elements(h_a.size()),
+public:
+    clogs_scan(const std::vector<T> &h_a)
+        : scan_algorithm<T>(h_a),
+        elements(h_a.size()),
         d_a(ctx, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
             h_a.size() * sizeof(T),
             const_cast<T *>(h_a.data())),
@@ -69,79 +61,64 @@ struct clogs_scan<T>::data_t
         scan(ctx, device, clogs_type<T>::type())
     {
     }
+
+    virtual std::string name() const override { return "clogs::Scan"; }
+    virtual std::string api() const override { return "clogs"; }
+    virtual void finish() override { queue.finish(); }
+
+    virtual void run() override
+    {
+        scan.enqueue(queue, d_a, d_scan, elements);
+    }
+
+    virtual std::vector<T> get() const override
+    {
+        std::vector<T> ans(elements);
+        cl::copy(const_cast<cl::Buffer &>(d_scan), ans.begin(), ans.end());
+        return ans;
+    }
 };
 
-template<typename T>
-clogs_scan<T>::clogs_scan(const std::vector<T> &h_a)
-    : data(new data_t(resources->ctx, resources->device, h_a))
-{
-}
-
-template<typename T>
-clogs_scan<T>::~clogs_scan()
-{
-}
-
-template<typename T>
-void clogs_scan<T>::run()
-{
-    data->scan.enqueue(resources->queue, data->d_a, data->d_scan, data->elements);
-}
-
-template<typename T>
-std::vector<T> clogs_scan<T>::get() const
-{
-    std::vector<T> ans(data->elements);
-    cl::copy(data->d_scan, ans.begin(), ans.end());
-    return ans;
-}
-
-template class clogs_scan<cl_int>;
+static register_scan_algorithm<clogs_scan> register_clogs_scan;
 
 /************************************************************************/
 
 template<typename T>
-struct clogs_sort<T>::data_t
+class clogs_sort : public sort_algorithm<T>, public clogs_algorithm
 {
+private:
     std::size_t elements;
     cl::Buffer d_a;
     cl::Buffer d_target;
     clogs::Radixsort sort;
 
-    data_t(const cl::Context &ctx, const cl::Device &device, const std::vector<T> &h_a)
-        : elements(h_a.size()),
+public:
+    clogs_sort(const std::vector<T> &h_a)
+        : sort_algorithm<T>(h_a),
+        elements(h_a.size()),
         d_a(ctx, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, elements * sizeof(T),
               const_cast<T *>(h_a.data())),
         d_target(ctx, CL_MEM_READ_WRITE, h_a.size() * sizeof(T)),
         sort(ctx, device, clogs_type<T>::type())
     {
     }
+
+    virtual std::string name() const override { return "clogs::Radixsort"; }
+    virtual std::string api() const override { return "clogs"; }
+    virtual void finish() override { queue.finish(); }
+
+    virtual void run() override
+    {
+        queue.enqueueCopyBuffer(d_a, d_target, 0, 0, elements * sizeof(T));
+        sort.enqueue(queue, d_target, cl::Buffer(), elements);
+    }
+
+    virtual std::vector<T> get() const override
+    {
+        std::vector<T> ans(elements);
+        cl::copy(const_cast<cl::Buffer &>(d_target), ans.begin(), ans.end());
+        return ans;
+    }
 };
 
-template<typename T>
-clogs_sort<T>::clogs_sort(const std::vector<T> &h_a)
-    : data(new data_t(resources->ctx, resources->device, h_a))
-{
-}
-
-template<typename T>
-clogs_sort<T>::~clogs_sort()
-{
-}
-
-template<typename T>
-void clogs_sort<T>::run()
-{
-    resources->queue.enqueueCopyBuffer(data->d_a, data->d_target, 0, 0, data->elements * sizeof(T));
-    data->sort.enqueue(resources->queue, data->d_target, cl::Buffer(), data->elements);
-}
-
-template<typename T>
-std::vector<T> clogs_sort<T>::get() const
-{
-    std::vector<T> ans(data->elements);
-    cl::copy(data->d_target, ans.begin(), ans.end());
-    return ans;
-}
-
-template class clogs_sort<cl_uint>;
+static register_sort_algorithm<clogs_sort> register_clogs_sort;
