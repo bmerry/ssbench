@@ -44,7 +44,7 @@ endif
 
 ifeq ($(USE_THRUST),1)
     CXXFLAGS += -DUSE_THRUST=1
-    CXX_SOURCES += scanbench_thrust.cpp
+    CXX_SOURCES += scanbench_thrust_register.cpp
     CU_SOURCES += scanbench_thrust.cu
 endif
 
