@@ -17,7 +17,6 @@ CXX_SOURCES = scanbench.cpp
 
 ifeq ($(USE_THRUST),1)
     NVCC = nvcc
-    NVCCFLAGS = -arch sm_20
     LDFLAG_PREFIX = -Xcompiler
     LINK = $(NVCC) $(NVCCFLAGS)
 else
