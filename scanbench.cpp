@@ -7,7 +7,6 @@
 #include <algorithm>
 #include <numeric>
 #include <boost/program_options.hpp>
-#include "scanbench_thrust.h"
 #include "scanbench.h"
 
 namespace po = boost::program_options;
@@ -111,16 +110,5 @@ int main(int argc, char **argv)
     for (const auto &factory : scan_registry<std::int32_t>::get())
         time_algorithm(*factory(h_a), items, iterations);
 
-    std::cout << "\n";
-
-#if USE_THRUST
-    time_algorithm(thrust_scan<std::int32_t>(h_a), vscan, items, iterations);
-#endif
-
-    std::cout << "\n";
-
-#if USE_THRUST
-    time_algorithm(thrust_sort<std::uint32_t>(rnd), vsort, items, iterations);
-#endif
     return 0;
 }
