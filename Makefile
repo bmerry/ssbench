@@ -1,7 +1,7 @@
 USE_THRUST ?= 0
 USE_CLOGS ?= 0
 USE_VEX ?= 1
-USE_COMPUTE ?= 0
+USE_COMPUTE ?= 1
 USE_CPU ?= 1
 
 VEX_HOME ?= $(HOME)/devel/vexcl

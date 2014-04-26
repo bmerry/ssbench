@@ -5,103 +5,84 @@
 #include <boost/compute/algorithm/copy.hpp>
 #include <boost/compute/algorithm/exclusive_scan.hpp>
 #include <boost/compute/algorithm/sort.hpp>
-#include "scanbench_compute.h"
+#include "scanbench.h"
 
 namespace compute = boost::compute;
 
-compute_algorithm::compute_algorithm()
-    : queue(new compute::command_queue(compute::system::default_queue()))
+class compute_algorithm
 {
-}
+protected:
+    mutable boost::compute::command_queue queue;
 
-compute_algorithm::~compute_algorithm()
-{
-}
-
-void compute_algorithm::finish()
-{
-    queue->finish();
-}
+    compute_algorithm()
+    : queue(compute::system::default_queue()) {}
+};
 
 /************************************************************************/
 
 template<typename T>
-struct compute_scan<T>::data_t
+class compute_scan : public scan_algorithm<T>, compute_algorithm
 {
+private:
     compute::vector<T> d_a;
     compute::vector<T> d_scan;
 
-    data_t(const std::vector<T> &h_a)
-        : d_a(h_a), d_scan(h_a.size())
+public:
+    compute_scan(const std::vector<T> &h_a)
+        : scan_algorithm<T>(h_a), d_a(h_a), d_scan(h_a.size())
     {
+    }
+
+    virtual std::string name() const override { return "compute::exclusive_scan"; }
+    virtual std::string api() const override { return "compute"; }
+    virtual void finish() override { queue.finish(); }
+
+    virtual void run() override
+    {
+        compute::exclusive_scan(d_a.begin(), d_a.end(), d_scan.begin());
+    }
+
+    std::vector<T> get() const override
+    {
+        std::vector<T> ans(d_scan.size());
+        compute::copy(d_scan.begin(), d_scan.end(), ans.begin(), queue);
+        return ans;
     }
 };
 
-template<typename T>
-compute_scan<T>::compute_scan(const std::vector<T> &h_a)
-    : data(new data_t(h_a))
-{
-}
-
-template<typename T>
-compute_scan<T>::~compute_scan()
-{
-}
-
-template<typename T>
-void compute_scan<T>::run()
-{
-    compute::exclusive_scan(data->d_a.begin(), data->d_a.end(), data->d_scan.begin());
-}
-
-template<typename T>
-std::vector<T> compute_scan<T>::get() const
-{
-    std::vector<T> ans(data->d_scan.size());
-    compute::copy(data->d_scan.begin(), data->d_scan.end(), ans.begin(), *queue);
-    return ans;
-}
-
-template class compute_scan<cl_int>;
+static register_scan_algorithm<compute_scan> register_compute_scan;
 
 /************************************************************************/
 
 template<typename T>
-struct compute_sort<T>::data_t
+class compute_sort : public sort_algorithm<T>, public compute_algorithm
 {
+private:
     compute::vector<T> d_a;
     compute::vector<T> d_target;
 
-    data_t(const std::vector<T> &h_a)
-        : d_a(h_a), d_target(h_a.size())
+public:
+    compute_sort(const std::vector<T> &h_a)
+        : sort_algorithm<T>(h_a), d_a(h_a), d_target(h_a.size())
     {
+    }
+
+    virtual std::string name() const override { return "compute::sort"; }
+    virtual std::string api() const override { return "compute"; }
+    virtual void finish() override { queue.finish(); }
+
+    virtual void run() override
+    {
+        d_target = d_a;
+        compute::sort(d_target.begin(), d_target.end(), queue);
+    }
+
+    virtual std::vector<T> get() const override
+    {
+        std::vector<T> ans(d_target.size());
+        compute::copy(d_target.begin(), d_target.end(), ans.begin(), queue);
+        return ans;
     }
 };
 
-template<typename T>
-compute_sort<T>::compute_sort(const std::vector<T> &h_a)
-    : data(new data_t(h_a))
-{
-}
-
-template<typename T>
-compute_sort<T>::~compute_sort()
-{
-}
-
-template<typename T>
-void compute_sort<T>::run()
-{
-    data->d_target = data->d_a;
-    compute::sort(data->d_target.begin(), data->d_target.end());
-}
-
-template<typename T>
-std::vector<T> compute_sort<T>::get() const
-{
-    std::vector<T> ans(data->d_target.size());
-    compute::copy(data->d_target.begin(), data->d_target.end(), ans.begin(), *queue);
-    return ans;
-}
-
-template class compute_sort<cl_uint>;
+static register_sort_algorithm<compute_sort> register_compute_sort;
