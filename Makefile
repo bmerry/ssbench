@@ -1,6 +1,6 @@
 USE_THRUST ?= 0
 USE_CLOGS ?= 0
-USE_VEX ?= 0
+USE_VEX ?= 1
 USE_COMPUTE ?= 0
 USE_CPU ?= 1
 
@@ -33,7 +33,7 @@ endif
 
 ifeq ($(USE_VEX),1)
     CXXFLAGS += -I$(VEX_HOME) -DUSE_VEX=1
-    LDFLAGS += -lboost_system -lOpenCL
+    LDFLAGS += -lclogs -lboost_system -lOpenCL
     CXX_SOURCES += scanbench_vex.cpp
 endif
 

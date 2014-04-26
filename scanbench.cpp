@@ -8,7 +8,6 @@
 #include <numeric>
 #include <boost/program_options.hpp>
 #include "scanbench_thrust.h"
-#include "scanbench_vex.h"
 #include "scanbench_compute.h"
 #include "scanbench_clogs.h"
 #include "scanbench.h"
@@ -119,10 +118,6 @@ int main(int argc, char **argv)
 #if USE_COMPUTE
     time_algorithm(compute_scan<std::int32_t>(h_a), vscan, items, iterations);
 #endif
-#if USE_VEX
-    time_algorithm(vex_scan<std::int32_t>(h_a), vscan, items, iterations);
-    time_algorithm(vex_clogs_scan<std::int32_t>(h_a), vscan, items, iterations);
-#endif
 #if USE_CLOGS
     time_algorithm(clogs_scan<std::int32_t>(h_a), vscan, items, iterations);
 #endif
@@ -134,9 +129,6 @@ int main(int argc, char **argv)
 
 #if USE_COMPUTE
     time_algorithm(compute_sort<std::uint32_t>(rnd), vsort, items, iterations);
-#endif
-#if USE_VEX
-    time_algorithm(vex_sort<std::uint32_t>(rnd), vsort, items, iterations);
 #endif
 #if USE_CLOGS
     time_algorithm(clogs_sort<std::uint32_t>(rnd), vsort, items, iterations);

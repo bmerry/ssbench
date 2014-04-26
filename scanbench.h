@@ -34,7 +34,7 @@ static inline bool check_equal(std::size_t idx, const t &a, const t &b)
 }
 
 template<typename T>
-class scan_algorithm : public virtual algorithm
+class scan_algorithm : public algorithm
 {
 private:
     std::vector<T> expected;
@@ -63,7 +63,7 @@ public:
 };
 
 template<typename T>
-class sort_algorithm : public virtual algorithm
+class sort_algorithm : public algorithm
 {
 private:
     std::vector<T> expected;
