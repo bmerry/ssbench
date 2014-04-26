@@ -19,7 +19,7 @@ public:
     virtual void run() = 0;
     virtual void finish() = 0;
     virtual void validate() const = 0;
-    ~algorithm() {}
+    virtual ~algorithm() {}
 };
 
 template<typename t>
@@ -89,6 +89,8 @@ public:
     }
 };
 
+/********************************************************************/
+
 template<typename T, typename A, typename... Args>
 class registry
 {
@@ -139,6 +141,23 @@ public:
     {
         sort_registry<std::uint32_t>::add_class<A<std::uint32_t>>();
     }
+};
+
+/********************************************************************/
+
+// Utilities for handling wrappers around CUDA
+// In each template, A does not need to be a complete class
+
+template<typename T, typename A>
+class sort_wrapper
+{
+private:
+    A *inner;
+
+    sort_wrapper(const sort_wrapper &) = delete;
+    sort_wrapper &operator=(const sort_wrapper &) = delete;
+public:
+    virtual void 
 };
 
 #endif

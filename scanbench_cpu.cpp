@@ -5,7 +5,8 @@
 #include <parallel/algorithm>
 #include <parallel/numeric>
 #include <omp.h>
-#include "scanbench.h"
+#include "scanbench_algorithms.h"
+#include "scanbench_register.h"
 
 template<typename T>
 class cpu_scan : public scan_algorithm<T>

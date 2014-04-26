@@ -5,7 +5,8 @@
 #include <boost/compute/algorithm/copy.hpp>
 #include <boost/compute/algorithm/exclusive_scan.hpp>
 #include <boost/compute/algorithm/sort.hpp>
-#include "scanbench.h"
+#include "scanbench_algorithms.h"
+#include "scanbench_register.h"
 
 namespace compute = boost::compute;
 

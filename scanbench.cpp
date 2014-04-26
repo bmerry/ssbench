@@ -7,7 +7,8 @@
 #include <algorithm>
 #include <numeric>
 #include <boost/program_options.hpp>
-#include "scanbench.h"
+#include "scanbench_algorithms.h"
+#include "scanbench_register.h"
 
 namespace po = boost::program_options;
 
@@ -108,7 +109,16 @@ int main(int argc, char **argv)
         rnd[i] = (std::uint32_t) i * 0x9E3779B9;
 
     for (const auto &factory : scan_registry<std::int32_t>::get())
-        time_algorithm(*factory(h_a), items, iterations);
+    {
+        std::unique_ptr<scan_algorithm<std::int32_t> > alg(factory(h_a));
+        time_algorithm(*alg, items, iterations);
+    }
+
+    for (const auto &factory : sort_registry<std::uint32_t>::get())
+    {
+        std::unique_ptr<sort_algorithm<std::uint32_t> > alg(factory(rnd));
+        time_algorithm(*alg, items, iterations);
+    }
 
     return 0;
 }

@@ -1,0 +1,91 @@
+#ifndef SCANBENCH_ALGORITHMS_H
+#define SCANBENCH_ALGORITHMS_H
+
+#include <vector>
+#include <string>
+#include <algorithm>
+#include <numeric>
+#include <utility>
+#include <cassert>
+#include <iostream>
+
+class algorithm
+{
+public:
+    virtual std::string api() const = 0;
+    virtual std::string algorithm_name() const = 0;
+    virtual std::string name() const = 0;
+    virtual void run() = 0;
+    virtual void finish() = 0;
+    virtual void validate() const = 0;
+    virtual ~algorithm() {}
+};
+
+template<typename t>
+static inline bool check_equal(std::size_t idx, const t &a, const t &b)
+{
+    if (a != b)
+    {
+        std::cerr << idx << ": expected " << a << " but found " << b << '\n';
+        return false;
+    }
+    return true;
+}
+
+template<typename T>
+class scan_algorithm : public algorithm
+{
+private:
+    std::vector<T> expected;
+
+    virtual std::vector<T> get() const = 0;
+public:
+    typedef T value_type;
+
+    scan_algorithm(const std::vector<T> &in)
+        : expected(in.size())
+    {
+        std::partial_sum(in.begin(), in.end() - 1, expected.begin() + 1);
+        expected[0] = T();
+    }
+
+    virtual std::string algorithm_name() const { return "scan"; }
+
+    virtual void validate() const
+    {
+        std::vector<T> out = get();
+        assert(out.size() == expected.size());
+        for (std::size_t i = 0; i < expected.size(); i++)
+            if (!check_equal(i, expected[i], out[i]))
+                break;
+    }
+};
+
+template<typename T>
+class sort_algorithm : public algorithm
+{
+private:
+    std::vector<T> expected;
+    virtual std::vector<T> get() const = 0;
+public:
+    typedef T value_type;
+
+    sort_algorithm(const std::vector<T> &in)
+        : expected(in)
+    {
+        std::sort(expected.begin(), expected.end());
+    }
+
+    virtual std::string algorithm_name() const { return "sort"; }
+
+    virtual void validate() const
+    {
+        std::vector<T> out = get();
+        assert(out.size() == expected.size());
+        for (std::size_t i = 0; i < expected.size(); i++)
+            if (!check_equal(i, expected[i], out[i]))
+                break;
+    }
+};
+
+#endif

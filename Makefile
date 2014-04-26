@@ -45,6 +45,7 @@ endif
 
 ifeq ($(USE_THRUST),1)
     CXXFLAGS += -DUSE_THRUST=1
+    CXX_SOURCES += scanbench_thrust.cpp
     CU_SOURCES += scanbench_thrust.cu
 endif
 
@@ -59,7 +60,7 @@ OBJECTS = $(patsubst %.cpp, %.o, $(CXX_SOURCES)) $(patsubst %.cu, %.o, $(CU_SOUR
 scanbench: $(OBJECTS) Makefile
 	$(LINK) -o $@ $(OBJECTS) $(LDFLAGS)
 
-%.o: %.cpp %.h scanbench.h
+%.o: %.cpp %.h $(wildcard *.h)
 	$(CXX) -c $< $(CXXFLAGS)
 
 %.o: %.cu

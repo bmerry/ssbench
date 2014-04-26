@@ -35,7 +35,25 @@ public:
     }
 };
 
-static register_scan_algorithm<thrust_scan> register_thrust_scan;
+template<typename T>
+scan_algorithm<T> *make_thrust_scan(const std::vector<T> &h_a)
+{
+    return new thrust_scan<T>(h_a);
+}
+
+template thrust_scan_factory<int>;
+
+template<typename A>
+struct algorithm_factory;
+
+template<typename T>>
+struct algorithm_factory<thrust_scan<T> >
+{
+    scan_algorithm *create(const std::vector<T> &h_a)
+    {
+        return new thrust_scan<T>(h_a);
+    }
+};
 
 /********************************************************************/
 
@@ -70,4 +88,11 @@ public:
     }
 };
 
-static register_sort_algorithm<thrust_sort> register_thrust_sort;
+template<typename T>
+struct algorithm_factory<thrust_sort<T> >
+{
+    sort_algorithm<T> *create(const std::vector<T> &h_a)
+    {
+        return new thrust_sort<T>(h_a);
+    }
+};

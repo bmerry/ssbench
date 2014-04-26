@@ -4,7 +4,8 @@
 #include <vexcl/vexcl.hpp>
 #include <vexcl/external/clogs.hpp>
 #include <stdexcept>
-#include "scanbench.h"
+#include "scanbench_algorithms.h"
+#include "scanbench_register.h"
 
 class vex_algorithm
 {
