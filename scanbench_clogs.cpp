@@ -63,8 +63,8 @@ public:
     {
     }
 
-    virtual std::string name() const override { return "clogs::Scan"; }
-    virtual std::string api() const override { return "clogs"; }
+    static std::string name() { return "clogs::Scan"; }
+    static std::string api() { return "clogs"; }
     virtual void finish() override { queue.finish(); }
 
     virtual void run() override
@@ -104,8 +104,8 @@ public:
     {
     }
 
-    virtual std::string name() const override { return "clogs::Radixsort"; }
-    virtual std::string api() const override { return "clogs"; }
+    static std::string name() { return "clogs::Radixsort"; }
+    static std::string api() { return "clogs"; }
     virtual void finish() override { queue.finish(); }
 
     virtual void run() override

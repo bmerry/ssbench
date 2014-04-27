@@ -33,8 +33,8 @@ public:
     {
     }
 
-    virtual std::string name() const override { return "vex::exclusive_scan"; }
-    virtual std::string api() const override { return "vex"; }
+    static std::string name() { return "vex::exclusive_scan"; }
+    static std::string api() { return "vex"; }
     virtual void finish() override { ctx.finish(); }
 
     virtual void run() override
@@ -57,8 +57,8 @@ class vex_clogs_scan : public vex_scan<T>
 public:
     using vex_scan<T>::vex_scan;
 
-    virtual std::string name() const override { return "vex::clogs::exclusive_scan"; }
-    virtual std::string api() const override { return "vex"; }
+    static std::string name() { return "vex::clogs::exclusive_scan"; }
+    static std::string api() { return "vex"; }
     virtual void finish() override { this->ctx.finish(); }
 
     virtual void run() override
@@ -85,8 +85,8 @@ public:
     {
     }
 
-    virtual std::string name() const override { return "vex::sort"; }
-    virtual std::string api() const override { return "vex"; }
+    static std::string name() { return "vex::sort"; }
+    static std::string api() { return "vex"; }
     virtual void finish() override { ctx.finish(); }
 
     virtual void run() override

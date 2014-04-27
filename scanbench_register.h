@@ -17,32 +17,43 @@ struct algorithm_factory
     {
         return new A(std::forward<Args>(args)...);
     }
+
+    static std::string name() { return A::name(); }
+    static std::string api()  { return A::api(); }
 };
 
 template<typename T, typename A, typename... Args>
 class registry
 {
 public:
-    typedef std::function<A *(Args...)> factory;
+    struct entry
+    {
+        std::function<std::unique_ptr<A>(Args...)> factory;
+        std::string name;
+        std::string api;
+    };
 
     template<typename S>
     static void add_class()
     {
-        auto f = [](Args... in) -> A*
+        entry e;
+        e.factory = [](Args... in) -> std::unique_ptr<A>
         {
-            return algorithm_factory<S>::create(in...);
+            return std::unique_ptr<A>(algorithm_factory<S>::create(in...));
         };
-        factories.push_back(std::move(f));
+        e.name = algorithm_factory<S>::name();
+        e.api = algorithm_factory<S>::api();
+        entries.push_back(std::move(e));
     }
 
-    static const std::vector<factory> &get() { return factories; }
+    static const std::vector<entry> &get() { return entries; }
 
 private:
-    static std::vector<factory> factories;
+    static std::vector<entry> entries;
 };
 
 template<typename T, typename A, typename... Args>
-std::vector<typename registry<T, A, Args...>::factory> registry<T, A, Args...>::factories;
+std::vector<typename registry<T, A, Args...>::entry> registry<T, A, Args...>::entries;
 
 template<typename T>
 using scan_registry = registry<T, scan_algorithm<T>, const std::vector<T> &>;

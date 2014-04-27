@@ -34,8 +34,8 @@ public:
     {
     }
 
-    virtual std::string name() const override { return "compute::exclusive_scan"; }
-    virtual std::string api() const override { return "compute"; }
+    static std::string name() { return "compute::exclusive_scan"; }
+    static std::string api() { return "compute"; }
     virtual void finish() override { queue.finish(); }
 
     virtual void run() override
@@ -68,8 +68,8 @@ public:
     {
     }
 
-    virtual std::string name() const override { return "compute::sort"; }
-    virtual std::string api() const override { return "compute"; }
+    static std::string name() { return "compute::sort"; }
+    static std::string api() { return "compute"; }
     virtual void finish() override { queue.finish(); }
 
     virtual void run() override

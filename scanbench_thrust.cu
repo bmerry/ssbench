@@ -4,6 +4,7 @@
 #include <vector>
 #include <string>
 #include "scanbench_algorithms.h"
+#include "scanbench_thrust.h"
 
 template<typename T>
 class thrust_scan : public scan_algorithm<T>
@@ -18,8 +19,8 @@ public:
     {
     }
 
-    virtual std::string name() const { return "thrust::exclusive_scan"; }
-    virtual std::string api() const { return "thrust"; }
+    static std::string name() { return "thrust::exclusive_scan"; }
+    static std::string api() { return "thrust"; }
     virtual void finish() { cudaDeviceSynchronize(); }
 
     virtual void run()
@@ -35,22 +36,16 @@ public:
     }
 };
 
-template<typename T>
-scan_algorithm<T> *make_thrust_scan(const std::vector<T> &h_a)
-{
-    return new thrust_scan<T>(h_a);
-}
-
-template<typename A>
-struct algorithm_factory;
-
-template<typename T>
+template<typename T>>
 struct algorithm_factory<thrust_scan<T> >
 {
     static scan_algorithm<T> *create(const std::vector<T> &h_a)
     {
         return new thrust_scan<T>(h_a);
     }
+
+    static std::string name() { return thrust_scan<T>::name(); }
+    static std::string api() { return thrust_scan<T>::api(); }
 };
 
 template struct algorithm_factory<thrust_scan<int> >;
@@ -70,8 +65,8 @@ public:
     {
     }
 
-    virtual std::string name() const { return "thrust::sort"; }
-    virtual std::string api() const { return "thrust"; }
+    static std::string name() { return "thrust::sort"; }
+    static std::string api() { return "thrust"; }
     virtual void finish() { cudaDeviceSynchronize(); }
 
     virtual void run()
@@ -95,6 +90,9 @@ struct algorithm_factory<thrust_sort<T> >
     {
         return new thrust_sort<T>(h_a);
     }
+
+    static std::string name() { return thrust_sort<T>::name(); }
+    static std::string api() { return thrust_sort<T>::api(); }
 };
 
 template struct algorithm_factory<thrust_sort<unsigned int> >;

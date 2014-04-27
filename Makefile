@@ -27,30 +27,28 @@ endif
 ifeq ($(USE_CLOGS),1)
     LDFLAGS += -lclogs -lOpenCL
     CXX_SOURCES += scanbench_clogs.cpp
-    CXXFLAGS += -DUSE_CLOGS=1
 endif
 
 ifeq ($(USE_VEX),1)
-    CXXFLAGS += -I$(VEX_HOME) -DUSE_VEX=1
+    CXXFLAGS += -I$(VEX_HOME)
     LDFLAGS += -lclogs -lboost_system -lOpenCL
     CXX_SOURCES += scanbench_vex.cpp
 endif
 
 ifeq ($(USE_COMPUTE),1)
-    CXXFLAGS += -I$(COMPUTE_HOME)/include -DUSE_COMPUTE=1
+    CXXFLAGS += -I$(COMPUTE_HOME)/include
     LDFLAGS += -lOpenCL
     CXX_SOURCES += scanbench_compute.cpp
 endif
 
 ifeq ($(USE_THRUST),1)
-    CXXFLAGS += -DUSE_THRUST=1
     CXX_SOURCES += scanbench_thrust_register.cpp
     CU_SOURCES += scanbench_thrust.cu
 endif
 
 ifeq ($(USE_CPU),1)
     CXX_SOURCES += scanbench_cpu.cpp
-    CXXFLAGS += -fopenmp -DUSE_CPU=1
+    CXXFLAGS += -fopenmp
     LDFLAGS += $(LDFLAG_PREFIX) -fopenmp
 endif
 
@@ -59,10 +57,10 @@ OBJECTS = $(patsubst %.cpp, %.o, $(CXX_SOURCES)) $(patsubst %.cu, %.o, $(CU_SOUR
 scanbench: $(OBJECTS) Makefile
 	$(LINK) -o $@ $(OBJECTS) $(LDFLAGS)
 
-%.o: %.cpp %.h $(wildcard *.h)
+%.o: %.cpp $(wildcard *.h)
 	$(CXX) -c $< $(CXXFLAGS)
 
-%.o: %.cu
+%.o: %.cu $(wildcard *.h)
 	$(NVCC) -c $< $(NVCCFLAGS)
 
 clean:

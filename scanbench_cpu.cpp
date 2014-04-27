@@ -16,7 +16,7 @@ protected:
     std::vector<T> out;
 public:
     cpu_scan(const std::vector<T> &h_a) : scan_algorithm<T>(h_a), a(h_a), out(h_a.size()) {}
-    virtual std::string api() const override { return "cpu"; }
+    static std::string api() { return "cpu"; }
     virtual void finish() override {}
     virtual std::vector<T> get() const override { return out; }
 };
@@ -26,7 +26,7 @@ class serial_scan : public cpu_scan<T>
 {
 public:
     using cpu_scan<T>::cpu_scan;
-    std::string name() const { return "serial scan"; }
+    static std::string name() { return "serial scan"; }
     virtual void run() override
     {
         std::partial_sum(this->a.begin(), this->a.end() - 1, this->out.begin() + 1);
@@ -40,7 +40,7 @@ class parallel_scan : public cpu_scan<T>
 public:
     using cpu_scan<T>::cpu_scan;
 
-    std::string name() const { return "parallel scan"; }
+    static std::string name() { return "parallel scan"; }
     virtual void run() override
     {
         __gnu_parallel::partial_sum(this->a.begin(), this->a.end() - 1, this->out.begin() + 1);
@@ -54,7 +54,7 @@ class my_parallel_scan : public cpu_scan<T>
 public:
     using cpu_scan<T>::cpu_scan;
 
-    std::string name() const { return "my parallel scan"; }
+    static std::string name() { return "my parallel scan"; }
     virtual void run() override
     {
         std::size_t threads;
@@ -123,7 +123,7 @@ public:
     {
     }
 
-    virtual std::string api() const override { return "cpu"; }
+    static std::string api() { return "cpu"; }
     virtual void finish() override {}
     virtual std::vector<T> get() const override { return target; }
 };
@@ -134,7 +134,7 @@ class serial_sort : public cpu_sort<T>
 public:
     using cpu_sort<T>::cpu_sort;
 
-    virtual std::string name() const override { return "serial sort"; }
+    static std::string name() { return "serial sort"; }
     virtual void run() override
     {
         this->target = this->a;
@@ -148,7 +148,7 @@ class parallel_sort : public cpu_sort<T>
 public:
     using cpu_sort<T>::cpu_sort;
 
-    virtual std::string name() const override { return "parallel sort"; }
+    static std::string name() { return "parallel sort"; }
     virtual void run() override
     {
         this->target = this->a;

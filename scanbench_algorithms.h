@@ -1,3 +1,6 @@
+/* Note: this file must not use C++11 features, because CUDA does not support it.
+ */
+
 #ifndef SCANBENCH_ALGORITHMS_H
 #define SCANBENCH_ALGORITHMS_H
 
@@ -12,9 +15,6 @@
 class algorithm
 {
 public:
-    virtual std::string api() const = 0;
-    virtual std::string algorithm_name() const = 0;
-    virtual std::string name() const = 0;
     virtual void run() = 0;
     virtual void finish() = 0;
     virtual void validate() const = 0;
@@ -49,8 +49,6 @@ public:
         expected[0] = T();
     }
 
-    virtual std::string algorithm_name() const { return "scan"; }
-
     virtual void validate() const
     {
         std::vector<T> out = get();
@@ -76,8 +74,6 @@ public:
         std::sort(expected.begin(), expected.end());
     }
 
-    virtual std::string algorithm_name() const { return "sort"; }
-
     virtual void validate() const
     {
         std::vector<T> out = get();
@@ -87,5 +83,11 @@ public:
                 break;
     }
 };
+
+/* See scanbench_register for the definition. It is declared here so that
+ * it can be specialised by CUDA code that cannot include C++11 code.
+ */
+template<typename A>
+struct algorithm_factory;
 
 #endif

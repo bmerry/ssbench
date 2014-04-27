@@ -6,6 +6,7 @@
 #include <cassert>
 #include <algorithm>
 #include <numeric>
+#include <set>
 #include <boost/program_options.hpp>
 #include "scanbench_algorithms.h"
 #include "scanbench_register.h"
@@ -14,7 +15,7 @@ namespace po = boost::program_options;
 
 typedef std::chrono::high_resolution_clock clock_type;
 
-static void time_algorithm(algorithm &alg, size_t N, int iter)
+static void time_algorithm(algorithm &alg, const std::string &name, size_t N, int iter)
 {
     // Warmup
     alg.run();
@@ -35,7 +36,7 @@ static void time_algorithm(algorithm &alg, size_t N, int iter)
     std::cout << std::setw(20) << std::fixed << std::setprecision(1);
     std::cout << rate << " M/s\t";
     std::cout << std::setw(0) << std::setprecision(6);
-    std::cout << time << "\t" << alg.name() << '\n';
+    std::cout << time << "\t" << name << '\n';
 }
 
 static void usage(std::ostream &o, const po::options_description &opts)
@@ -52,23 +53,21 @@ static po::variables_map processOptions(int argc, char **argv)
         ("help,h",        "show usage")
         ("items,N",       po::value<int>()->default_value(16777216), "Problem size")
         ("iterations,R",  po::value<int>()->default_value(16), "Number of repetitions")
-#if USE_CPU
-        ("no-cpu",        "disable CPU algorithms")
-#endif
-#if USE_VEX
-        ("no-vex",        "disable VexCL algorithms")
-#endif
-#if USE_COMPUTE
-        ("no-compute",    "disable boost::compute algorithms")
-#endif
-#if USE_CLOGS
-        ("no-clogs",      "disable CLOGS algorithms")
-#endif
-#if USE_THRUST
-        ("no-thrust",     "disable Thrust algorithms")
-#endif
         ("no-sort",       "disable all sorting algorithms")
         ("no-scan",       "disable all scan algorithms");
+
+    std::set<std::string> apis;
+    for (const auto &entry : scan_registry<std::int32_t>::get())
+        apis.insert(entry.api);
+    for (const auto &entry : sort_registry<std::uint32_t>::get())
+        apis.insert(entry.api);
+
+    for (const std::string &api : apis)
+    {
+        std::string optname = "no-" + api;
+        std::string optdesc = "disable " + api + " algorithms";
+        opts.add_options()(optname.c_str(), optdesc.c_str());
+    }
 
     try
     {
@@ -95,29 +94,51 @@ static po::variables_map processOptions(int argc, char **argv)
     }
 }
 
+static bool enabled(const po::variables_map &vm, const std::string &api)
+{
+    return !vm.count("no-" + api);
+}
+
 int main(int argc, char **argv)
 {
     po::variables_map vm = processOptions(argc, argv);
     const int iterations = vm["iterations"].as<int>();
     const int items = vm["items"].as<int>();
 
-    std::vector<std::int32_t> h_a(items);
-    for (std::size_t i = 0; i < h_a.size(); i++)
-        h_a[i] = i;
-    std::vector<std::uint32_t> rnd(items);
-    for (std::size_t i = 0; i < rnd.size(); i++)
-        rnd[i] = (std::uint32_t) i * 0x9E3779B9;
-
-    for (const auto &factory : scan_registry<std::int32_t>::get())
+    if (!vm.count("no-scan"))
     {
-        std::unique_ptr<scan_algorithm<std::int32_t> > alg(factory(h_a));
-        time_algorithm(*alg, items, iterations);
+        std::vector<std::int32_t> a(items);
+        for (std::size_t i = 0; i < a.size(); i++)
+            a[i] = i;
+
+        std::cout << "Scan\n\n";
+        for (const auto &entry : scan_registry<std::int32_t>::get())
+        {
+            if (enabled(vm, entry.api))
+            {
+                auto ptr = entry.factory(a);
+                time_algorithm(*ptr, entry.name, items, iterations);
+            }
+        }
+        std::cout << "\n";
     }
 
-    for (const auto &factory : sort_registry<std::uint32_t>::get())
+    if (!vm.count("no-sort"))
     {
-        std::unique_ptr<sort_algorithm<std::uint32_t> > alg(factory(rnd));
-        time_algorithm(*alg, items, iterations);
+        std::vector<std::uint32_t> rnd(items);
+        for (std::size_t i = 0; i < rnd.size(); i++)
+            rnd[i] = (std::uint32_t) i * 0x9E3779B9;
+
+        std::cout << "Sort\n\n";
+        for (const auto &entry : sort_registry<std::uint32_t>::get())
+        {
+            if (enabled(vm, entry.api))
+            {
+                auto ptr = entry.factory(rnd);
+                time_algorithm(*ptr, entry.name, items, iterations);
+            }
+        }
+        std::cout << "\n";
     }
 
     return 0;
