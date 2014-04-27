@@ -10,7 +10,7 @@ COMPUTE_HOME ?= $(HOME)/src/compute
 CXX = g++
 NVCC = nvcc
 NVCCFLAGS = -arch sm_20
-CXXFLAGS = -g -D__CL_ENABLE_EXCEPTIONS -Wall -Wno-unused-local-typedefs -std=c++11
+CXXFLAGS = -g -O3 -D__CL_ENABLE_EXCEPTIONS -Wall -Wno-unused-local-typedefs -std=c++11
 LDFLAGS = -g -lboost_program_options
 
 CXX_SOURCES = scanbench.cpp

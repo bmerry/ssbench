@@ -36,17 +36,17 @@ public:
     }
 };
 
-template<typename T>>
-struct algorithm_factory<thrust_scan<T> >
+template<typename T>
+scan_algorithm<T> *algorithm_factory<thrust_scan<T> >::create(const std::vector<T> &h_a)
 {
-    static scan_algorithm<T> *create(const std::vector<T> &h_a)
-    {
-        return new thrust_scan<T>(h_a);
-    }
+    return new thrust_scan<T>(h_a);
+}
 
-    static std::string name() { return thrust_scan<T>::name(); }
-    static std::string api() { return thrust_scan<T>::api(); }
-};
+template<typename T>
+std::string algorithm_factory<thrust_scan<T> >::name() { return thrust_scan<T>::name(); }
+
+template<typename T>
+std::string algorithm_factory<thrust_scan<T> >::api() { return thrust_scan<T>::api(); }
 
 template struct algorithm_factory<thrust_scan<int> >;
 
@@ -84,15 +84,15 @@ public:
 };
 
 template<typename T>
-struct algorithm_factory<thrust_sort<T> >
+sort_algorithm<T> *algorithm_factory<thrust_sort<T> >::create(const std::vector<T> &h_a)
 {
-    static sort_algorithm<T> *create(const std::vector<T> &h_a)
-    {
-        return new thrust_sort<T>(h_a);
-    }
+    return new thrust_sort<T>(h_a);
+}
 
-    static std::string name() { return thrust_sort<T>::name(); }
-    static std::string api() { return thrust_sort<T>::api(); }
-};
+template<typename T>
+std::string algorithm_factory<thrust_sort<T> >::name() { return thrust_sort<T>::name(); }
+
+template<typename T>
+std::string algorithm_factory<thrust_sort<T> >::api() { return thrust_sort<T>::api(); }
 
 template struct algorithm_factory<thrust_sort<unsigned int> >;
