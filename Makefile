@@ -1,4 +1,5 @@
 USE_THRUST ?= 1
+USE_CUB ?= 1
 USE_CLOGS ?= 1
 USE_VEX ?= 1
 USE_COMPUTE ?= 1
@@ -6,6 +7,7 @@ USE_CPU ?= 1
 
 VEX_HOME ?= $(HOME)/devel/vexcl
 COMPUTE_HOME ?= $(HOME)/src/compute
+CUB_HOME ?= $(HOME)/src/cub-1.3.0
 
 CXX = g++
 NVCC = nvcc
@@ -15,8 +17,15 @@ LDFLAGS = -g -lboost_program_options
 
 CXX_SOURCES = scanbench.cpp
 
+DO_CUDA=0
 ifeq ($(USE_THRUST),1)
-    NVCC = nvcc
+    DO_CUDA=1
+endif
+ifeq ($(USE_CUB),1)
+    DO_CUDA=1
+endif
+
+ifeq ($(DO_CUDA),1)
     LDFLAG_PREFIX = -Xcompiler
     LINK = $(NVCC) $(NVCCFLAGS)
 else
@@ -44,6 +53,12 @@ endif
 ifeq ($(USE_THRUST),1)
     CXX_SOURCES += scanbench_thrust_register.cpp
     CU_SOURCES += scanbench_thrust.cu
+endif
+
+ifeq ($(USE_CUB),1)
+    NVCCFLAGS += -I$(CUB_HOME)
+    CXX_SOURCES += scanbench_cub_register.cpp
+    CU_SOURCES += scanbench_cub.cu
 endif
 
 ifeq ($(USE_CPU),1)
