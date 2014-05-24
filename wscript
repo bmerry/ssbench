@@ -44,16 +44,16 @@ def options(ctx):
     ctx.add_option('--with-clogs', action = 'store', help = 'Path to CLOGS')
     ctx.add_option('--with-compute', action = 'store', help = 'Path to Boost.Compute')
     ctx.add_option('--with-vexcl', action = 'store', help = 'Path to VexCL')
+    ctx.add_option('--with-bolt', action = 'store', help = 'Path to Bolt')
     ctx.add_option('--with-thrust', action = 'store', help = 'Path to Thrust')
     ctx.add_option('--with-cub', action = 'store', help = 'Path to CUB')
 
 @conf
 def check_library(self, func, option, includes_add, libpath_add, *args, **kw):
     if option is not None:
-        if option and includes_add is not None:
-            kw['includes'] = os.path.join(option, includes_add)
-        if option and libpath_add is not None:
-            kw['libpath'] = os.path.join(option, libpath_add)
+        if option:
+            kw['includes'] = [os.path.join(option, x) for x in includes_add]
+            kw['libpath'] = [os.path.join(option, x) for x in libpath_add]
         return func(*args, **kw)
     else:
         return func(*args, mandatory = False, **kw)
@@ -74,16 +74,19 @@ def configure(ctx):
     ctx.env.append_value('CXXFLAGS', ['-Wall', '-O3', '-std=c++11', '-fopenmp'])
     ctx.env.append_value('LINKFLAGS', ['-fopenmp'])
 
-    ctx.env.have_thrust = ctx.check_cuda_library(ctx.check_cuda, ctx.options.with_thrust, '', None,
+    ctx.env.have_thrust = ctx.check_cuda_library(ctx.check_cuda, ctx.options.with_thrust, [''], [],
         header_name = 'thrust/scan.h', uselib_store = 'THRUST')
-    ctx.env.have_cub = ctx.check_cuda_library(ctx.check_cuda, ctx.options.with_cub, '', None,
+    ctx.env.have_cub = ctx.check_cuda_library(ctx.check_cuda, ctx.options.with_cub, [''], [],
         header_name = 'cub/cub.cuh', uselib_store = 'CUB')
-    ctx.env.have_clogs = ctx.check_library(ctx.check_cxx, ctx.options.with_clogs, 'include', 'lib',
+    ctx.env.have_clogs = ctx.check_library(ctx.check_cxx, ctx.options.with_clogs, ['include'], ['lib'],
         header_name = 'clogs/clogs.h', lib = ['clogs', 'OpenCL'], uselib_store = 'CLOGS')
-    ctx.env.have_compute = ctx.check_library(ctx.check_cxx, ctx.options.with_compute, 'include', None,
+    ctx.env.have_compute = ctx.check_library(ctx.check_cxx, ctx.options.with_compute, ['include'], [],
         header_name = 'boost/compute.hpp', lib = ['OpenCL'], uselib_store = 'COMPUTE')
-    ctx.env.have_vexcl = ctx.check_library(ctx.check_cxx, ctx.options.with_vexcl, '', None,
+    ctx.env.have_vexcl = ctx.check_library(ctx.check_cxx, ctx.options.with_vexcl, [''], [],
         header_name = 'vexcl/vexcl.hpp', lib = ['boost_system', 'OpenCL'], uselib_store = 'VEXCL')
+    ctx.env.have_bolt = ctx.check_library(ctx.check_cxx, ctx.options.with_bolt, ['include', 'build/include'], ['build/bolt/cl'],
+        header_name = 'bolt/cl/bolt.h', stlib = ['clBolt.runtime.gcc'],
+        lib = ['boost_system', 'OpenCL'], uselib_store = 'BOLT')
 
     ctx.check_cxx(
         header_name = 'boost/program_options.hpp',
@@ -107,6 +110,9 @@ def build(ctx):
     if ctx.env.have_vexcl:
         sources += ['scanbench_vex.cpp']
         use += ['VEXCL']
+    if ctx.env.have_bolt:
+        sources += ['scanbench_bolt.cpp']
+        use += ['BOLT']
 
     if ctx.env.have_thrust:
         sources += ['scanbench_thrust.cu', 'scanbench_thrust_register.cpp']
