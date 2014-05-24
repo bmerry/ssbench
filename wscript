@@ -64,7 +64,7 @@ def check_cuda_library(self, func, option, includes_add, libpath_add, *args, **k
         self.find_program('nvcc', var = 'NVCC')
         return self.check_library(func, option, includes_add, libpath_add, *args, **kw)
     else:
-        if not self.find_program('nvcc', var = 'NVCC'):
+        if not self.find_program('nvcc', var = 'NVCC', mandatory = False):
             return False
         return func(*args, mandatory = False, **kw)
 
