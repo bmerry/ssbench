@@ -94,7 +94,7 @@ def configure(ctx):
         uselib_store = 'PROGRAM_OPTIONS')
 
 def build(ctx):
-    sources = ['scanbench.cpp', 'scanbench_cpu.cpp']
+    sources = ['scanbench.cpp', 'scanbench_cpu.cpp', 'clutils.cpp']
     use = ['PROGRAM_OPTIONS']
     need_cuda = False
     features = ['cxx']
@@ -102,6 +102,7 @@ def build(ctx):
     ctx.env['NVCC_XCOMPILER'] = '-Xcompiler=%s'
     for arch, code in [('20', '20'), ('20', '21'), ('30', '30'), ('32', '32'), ('35', '35')]:
         ctx.env.append_value('CUDAFLAGS', ['-gencode', 'arch=compute_{},code=sm_{}'.format(arch, code)])
+    ctx.env.append_value('DEFINES', ['__CL_ENABLE_EXCEPTIONS'])
 
     if ctx.env.have_clogs:
         sources += ['scanbench_clogs.cpp']

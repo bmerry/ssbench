@@ -105,6 +105,8 @@ int main(int argc, char **argv)
     const int iterations = vm["iterations"].as<int>();
     const int items = vm["items"].as<int>();
 
+    device_type d = DEVICE_TYPE_GPU;
+
     if (!vm.count("no-scan"))
     {
         std::vector<std::int32_t> a(items);
@@ -116,8 +118,14 @@ int main(int argc, char **argv)
         {
             if (enabled(vm, entry.api))
             {
-                auto ptr = entry.factory(a);
-                time_algorithm(*ptr, entry.name, items, iterations);
+                try
+                {
+                    auto ptr = entry.factory(d, a);
+                    time_algorithm(*ptr, entry.name, items, iterations);
+                }
+                catch (device_not_supported)
+                {
+                }
             }
         }
         std::cout << "\n";
@@ -134,8 +142,14 @@ int main(int argc, char **argv)
         {
             if (enabled(vm, entry.api))
             {
-                auto ptr = entry.factory(rnd);
-                time_algorithm(*ptr, entry.name, items, iterations);
+                try
+                {
+                    auto ptr = entry.factory(d, rnd);
+                    time_algorithm(*ptr, entry.name, items, iterations);
+                }
+                catch (device_not_supported)
+                {
+                }
             }
         }
         std::cout << "\n";

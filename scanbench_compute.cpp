@@ -7,16 +7,34 @@
 #include <boost/compute/algorithm/sort.hpp>
 #include "scanbench_algorithms.h"
 #include "scanbench_register.h"
+#include "clutils.h"
 
 namespace compute = boost::compute;
 
 class compute_algorithm
 {
+private:
+    static boost::compute::device getDevice(device_type d)
+    {
+        for (const auto &device : boost::compute::system::devices())
+        {
+            if (device.type() == type_to_cl_type(d))
+                return device;
+        }
+        throw device_not_supported();
+    }
+
 protected:
+    boost::compute::device device;
+    boost::compute::context ctx;
     mutable boost::compute::command_queue queue;
 
-    compute_algorithm()
-    : queue(compute::system::default_queue()) {}
+    explicit compute_algorithm(device_type d)
+    : device(getDevice(d)),
+    ctx(device),
+    queue(ctx, device)
+    {
+    }
 };
 
 /************************************************************************/
@@ -29,8 +47,8 @@ private:
     compute::vector<T> d_scan;
 
 public:
-    compute_scan(const std::vector<T> &h_a)
-        : scan_algorithm<T>(h_a), d_a(h_a), d_scan(h_a.size())
+    compute_scan(device_type d, const std::vector<T> &h_a)
+        : scan_algorithm<T>(h_a), compute_algorithm(d), d_a(h_a, queue), d_scan(h_a.size(), ctx)
     {
     }
 
@@ -40,7 +58,7 @@ public:
 
     virtual void run() override
     {
-        compute::exclusive_scan(d_a.begin(), d_a.end(), d_scan.begin());
+        compute::exclusive_scan(d_a.begin(), d_a.end(), d_scan.begin(), queue);
     }
 
     std::vector<T> get() const override
@@ -63,8 +81,9 @@ private:
     compute::vector<T> d_target;
 
 public:
-    compute_sort(const std::vector<T> &h_a)
-        : sort_algorithm<T>(h_a), d_a(h_a), d_target(h_a.size())
+    compute_sort(device_type d, const std::vector<T> &h_a)
+        : sort_algorithm<T>(h_a), compute_algorithm(d),
+        d_a(h_a, queue), d_target(h_a.size(), ctx)
     {
     }
 
@@ -74,7 +93,7 @@ public:
 
     virtual void run() override
     {
-        d_target = d_a;
+        compute::copy_async(d_a.begin(), d_a.end(), d_target.begin(), queue);
         compute::sort(d_target.begin(), d_target.end(), queue);
     }
 

@@ -16,11 +16,14 @@ private:
     std::size_t temp_bytes;
 
 public:
-    cub_scan(const std::vector<T> &h_a) :
+    cub_scan(device_type d, const std::vector<T> &h_a) :
         scan_algorithm<T>(h_a),
         d_a(NULL), d_scan(NULL), d_temp(NULL), elements(h_a.size()),
         temp_bytes(0)
     {
+        if (d != DEVICE_TYPE_GPU)
+            throw device_not_supported();
+
         std::size_t bytes = elements * sizeof(T);
         cudaMalloc(&d_a, bytes);
         cudaMalloc(&d_scan, bytes);
@@ -81,11 +84,14 @@ private:
     std::size_t temp_bytes;
 
 public:
-    cub_sort(const std::vector<T> &h_a)
+    cub_sort(device_type d, const std::vector<T> &h_a)
         : sort_algorithm<T>(h_a),
         d_a(NULL), d_temp(NULL), elements(h_a.size()),
         temp_bytes(0)
     {
+        if (d != DEVICE_TYPE_GPU)
+            throw device_not_supported();
+
         std::size_t bytes = elements * sizeof(T);
         cudaMalloc(&d_a, bytes);
         cudaMalloc(&d_target.d_buffers[0], bytes);

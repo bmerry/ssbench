@@ -14,9 +14,11 @@ private:
     thrust::device_vector<T> d_scan;
 
 public:
-    thrust_scan(const std::vector<T> &h_a)
+    thrust_scan(device_type d, const std::vector<T> &h_a)
         : scan_algorithm<T>(h_a), d_a(h_a), d_scan(h_a.size())
     {
+        if (d != DEVICE_TYPE_GPU)
+            throw device_not_supported();
     }
 
     static std::string name() { return "thrust::exclusive_scan"; }
@@ -60,9 +62,11 @@ private:
     thrust::device_vector<T> d_target;
 
 public:
-    thrust_sort(const std::vector<T> &h_a)
+    thrust_sort(device_type d, const std::vector<T> &h_a)
         : sort_algorithm<T>(h_a), d_a(h_a), d_target(h_a.size())
     {
+        if (d != DEVICE_TYPE_GPU)
+            throw device_not_supported();
     }
 
     static std::string name() { return "thrust::sort"; }

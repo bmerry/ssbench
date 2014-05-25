@@ -5,6 +5,7 @@
 #include <clogs/radixsort.h>
 #include "scanbench_algorithms.h"
 #include "scanbench_register.h"
+#include "clutils.h"
 
 template<typename T>
 struct clogs_type
@@ -28,14 +29,14 @@ struct clogs_type<cl_uint>
 class clogs_algorithm
 {
 protected:
-    cl::Context ctx;
     cl::Device device;
+    cl::Context ctx;
     cl::CommandQueue queue;
 
-    clogs_algorithm()
-        : ctx(cl::Context::getDefault()),
-        device(cl::Device::getDefault()),
-        queue(cl::CommandQueue::getDefault())
+    explicit clogs_algorithm(device_type d)
+        : device(device_from_type(d)),
+        ctx(device),
+        queue(ctx, device)
     {
     }
 };
@@ -52,8 +53,8 @@ private:
     clogs::Scan scan;
 
 public:
-    clogs_scan(const std::vector<T> &h_a)
-        : scan_algorithm<T>(h_a),
+    clogs_scan(device_type d, const std::vector<T> &h_a)
+        : scan_algorithm<T>(h_a), clogs_algorithm(d),
         elements(h_a.size()),
         d_a(ctx, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
             h_a.size() * sizeof(T),
@@ -75,7 +76,7 @@ public:
     virtual std::vector<T> get() const override
     {
         std::vector<T> ans(elements);
-        cl::copy(const_cast<cl::Buffer &>(d_scan), ans.begin(), ans.end());
+        queue.enqueueReadBuffer(d_scan, CL_TRUE, 0, elements * sizeof(T), ans.data());
         return ans;
     }
 };
@@ -94,8 +95,8 @@ private:
     clogs::Radixsort sort;
 
 public:
-    clogs_sort(const std::vector<T> &h_a)
-        : sort_algorithm<T>(h_a),
+    clogs_sort(device_type d, const std::vector<T> &h_a)
+        : sort_algorithm<T>(h_a), clogs_algorithm(d),
         elements(h_a.size()),
         d_a(ctx, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, elements * sizeof(T),
               const_cast<T *>(h_a.data())),
@@ -117,7 +118,7 @@ public:
     virtual std::vector<T> get() const override
     {
         std::vector<T> ans(elements);
-        cl::copy(const_cast<cl::Buffer &>(d_target), ans.begin(), ans.end());
+        queue.enqueueReadBuffer(d_target, CL_TRUE, 0, elements * sizeof(T), ans.data());
         return ans;
     }
 };

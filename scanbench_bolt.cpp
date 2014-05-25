@@ -5,16 +5,31 @@
 #include <stdexcept>
 #include "scanbench_algorithms.h"
 #include "scanbench_register.h"
+#include "clutils.h"
 
 class bolt_algorithm
 {
 protected:
     bolt::cl::control control;
 
-    bolt_algorithm() : control()
+    explicit bolt_algorithm(device_type d) : control()
     {
-        control.setUseHost(bolt::cl::control::NoUseHost);
-        control.setForceRunMode(bolt::cl::control::OpenCL);
+        cl::Device device = device_from_type(d);
+        cl::Context ctx(device);
+        cl::CommandQueue queue(ctx, device);
+        control.setCommandQueue(queue);
+        switch (d)
+        {
+        case DEVICE_TYPE_GPU:
+            control.setUseHost(bolt::cl::control::NoUseHost);
+            control.setForceRunMode(bolt::cl::control::OpenCL);
+            break;
+        case DEVICE_TYPE_CPU:
+            control.setUseHost(bolt::cl::control::UseHost);
+            // TODO: install TBB to enable multicore; also use host vectors
+            control.setForceRunMode(bolt::cl::control::SerialCpu);
+            break;
+        }
     }
 };
 
@@ -27,8 +42,9 @@ protected:
     bolt::cl::device_vector<T> d_a, d_scan;
 
 public:
-    bolt_scan(const std::vector<T> &h_a)
-        : scan_algorithm<T>(h_a), d_a(h_a.begin(), h_a.end(), CL_MEM_READ_WRITE, control),
+    bolt_scan(device_type d, const std::vector<T> &h_a)
+        : scan_algorithm<T>(h_a), bolt_algorithm(d),
+        d_a(h_a.begin(), h_a.end(), CL_MEM_READ_WRITE, control),
         d_scan(h_a.size(), T(), CL_MEM_READ_WRITE, false, control)
     {
     }
@@ -60,8 +76,9 @@ protected:
     bolt::cl::device_vector<T> d_a, d_target;
 
 public:
-    bolt_sort(const std::vector<T> &h_a)
-        : sort_algorithm<T>(h_a), d_a(h_a.begin(), h_a.end(), CL_MEM_READ_WRITE, control),
+    bolt_sort(device_type d, const std::vector<T> &h_a)
+        : sort_algorithm<T>(h_a), bolt_algorithm(d),
+        d_a(h_a.begin(), h_a.end(), CL_MEM_READ_WRITE, control),
         d_target(h_a.size(), T(), CL_MEM_READ_WRITE, false, control)
     {
     }

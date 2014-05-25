@@ -12,6 +12,21 @@
 #include <cassert>
 #include <iostream>
 
+enum device_type
+{
+    DEVICE_TYPE_CPU,
+    DEVICE_TYPE_GPU
+};
+
+/* Exception class thrown by constructors to indicate that the library does not
+ * support the given device. This is a slight abuse of exceptions (it is not
+ * really exceptional), but is used because constructors cannot just return a
+ * failure code.
+ */
+class device_not_supported
+{
+};
+
 class algorithm
 {
 public:

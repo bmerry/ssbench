@@ -15,7 +15,12 @@ protected:
     std::vector<T> a;
     std::vector<T> out;
 public:
-    cpu_scan(const std::vector<T> &h_a) : scan_algorithm<T>(h_a), a(h_a), out(h_a.size()) {}
+    cpu_scan(device_type d, const std::vector<T> &h_a)
+        : scan_algorithm<T>(h_a), a(h_a), out(h_a.size())
+    {
+        if (d != DEVICE_TYPE_CPU)
+            throw device_not_supported();
+    }
     static std::string api() { return "cpu"; }
     virtual void finish() override {}
     virtual std::vector<T> get() const override { return out; }
@@ -118,11 +123,12 @@ protected:
     std::vector<T> target;
 
 public:
-    cpu_sort(const std::vector<T> &h_a)
+    cpu_sort(device_type d, const std::vector<T> &h_a)
         : sort_algorithm<T>(h_a), a(h_a), target(h_a.size())
     {
+        if (d != DEVICE_TYPE_CPU)
+            throw device_not_supported();
     }
-
     static std::string api() { return "cpu"; }
     virtual void finish() override {}
     virtual std::vector<T> get() const override { return target; }

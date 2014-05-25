@@ -6,16 +6,17 @@
 #include <stdexcept>
 #include "scanbench_algorithms.h"
 #include "scanbench_register.h"
+#include "clutils.h"
 
 class vex_algorithm
 {
 protected:
     vex::Context ctx;
 
-    vex_algorithm() : ctx(vex::Filter::Position(0))
+    explicit vex_algorithm(device_type d) : ctx(vex::Filter::Type(type_to_cl_type(d)) && vex::Filter::Position(0))
     {
         if (!ctx)
-            throw std::runtime_error("No device found for vex");
+            throw device_not_supported();
     }
 };
 
@@ -28,8 +29,8 @@ protected:
     vex::vector<T> d_a, d_scan;
 
 public:
-    vex_scan(const std::vector<T> &h_a)
-        : scan_algorithm<T>(h_a), d_a(ctx, h_a), d_scan(ctx, h_a.size())
+    vex_scan(device_type d, const std::vector<T> &h_a)
+        : scan_algorithm<T>(h_a), vex_algorithm(d), d_a(ctx, h_a), d_scan(ctx, h_a.size())
     {
     }
 
@@ -80,8 +81,8 @@ protected:
     vex::vector<T> d_target;
 
 public:
-    vex_sort(const std::vector<T> &h_a)
-        : sort_algorithm<T>(h_a), d_a(ctx, h_a), d_target(ctx, h_a.size())
+    vex_sort(device_type d, const std::vector<T> &h_a)
+        : sort_algorithm<T>(h_a), vex_algorithm(d), d_a(ctx, h_a), d_target(ctx, h_a.size())
     {
     }
 

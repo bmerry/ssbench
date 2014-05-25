@@ -6,12 +6,13 @@
 #include <utility>
 #include "scanbench_algorithms.h"
 
-/* Creates a new instance of class A. It is specialised for Thrust because
- * the thrust algorithm classes are incomplete at the point of instantiation.
+/* Creates a new instance of class A. Note that CUDA-based APIs provide
+ * specialisations because CUDA does not support C++11.
  */
 template<typename A>
 struct algorithm_factory
 {
+    // Throws
     template<typename... Args>
     static A *create(Args&&... args)
     {
@@ -28,7 +29,7 @@ class registry
 public:
     struct entry
     {
-        std::function<std::unique_ptr<A>(Args...)> factory;
+        std::function<std::unique_ptr<A>(device_type, Args...)> factory;
         std::string name;
         std::string api;
     };
@@ -37,9 +38,9 @@ public:
     static void add_class()
     {
         entry e;
-        e.factory = [](Args... in) -> std::unique_ptr<A>
+        e.factory = [](device_type d, Args... in) -> std::unique_ptr<A>
         {
-            return std::unique_ptr<A>(algorithm_factory<S>::create(in...));
+            return std::unique_ptr<A>(algorithm_factory<S>::create(d, in...));
         };
         e.name = algorithm_factory<S>::name();
         e.api = algorithm_factory<S>::api();
