@@ -100,6 +100,8 @@ def build(ctx):
     features = ['cxx']
 
     ctx.env['NVCC_XCOMPILER'] = '-Xcompiler=%s'
+    for arch, code in [('20', '20'), ('20', '21'), ('30', '30'), ('32', '32'), ('35', '35')]:
+        ctx.env.append_value('CUDAFLAGS', ['-gencode', 'arch=compute_{},code=sm_{}'.format(arch, code)])
 
     if ctx.env.have_clogs:
         sources += ['scanbench_clogs.cpp']
