@@ -80,7 +80,7 @@ static void sort_by_key(I1 key_first, I1 key_last, I2 value_first, Cmp cmp = Cmp
 {
     pair_iterator<I1, I2> first(key_first, value_first);
     pair_iterator<I1, I2> last(key_last, value_first + (key_last - key_first));
-    std::stable_sort(first, last,
+    std::sort(first, last,
         PairCmp<typename std::iterator_traits<I1>::value_type,
                 typename std::iterator_traits<I2>::value_type,
                 Cmp>(cmp));
@@ -105,7 +105,7 @@ static void parallel_sort_by_key(I1 key_first, I1 key_last, I2 value_first, Cmp 
 {
     pair_iterator<I1, I2> first(key_first, value_first);
     pair_iterator<I1, I2> last(key_last, value_first + (key_last - key_first));
-    __gnu_parallel::stable_sort(first, last,
+    __gnu_parallel::sort(first, last,
         PairCmp<typename std::iterator_traits<I1>::value_type,
                 typename std::iterator_traits<I2>::value_type,
                 Cmp>(cmp));
