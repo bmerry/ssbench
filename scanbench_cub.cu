@@ -58,9 +58,9 @@ public:
 };
 
 template<typename T>
-scan_algorithm<T> *algorithm_factory<cub_scan<T> >::create(const std::vector<T> &h_a)
+scan_algorithm<T> *algorithm_factory<cub_scan<T> >::create(device_type d, const std::vector<T> &h_a)
 {
-    return new cub_scan<T>(h_a);
+    return new cub_scan<T>(d, h_a);
 }
 
 template<typename T>
@@ -132,9 +132,9 @@ public:
 };
 
 template<typename T>
-sort_algorithm<T> *algorithm_factory<cub_sort<T> >::create(const std::vector<T> &h_a)
+sort_algorithm<T> *algorithm_factory<cub_sort<T> >::create(device_type d, const std::vector<T> &h_a)
 {
-    return new cub_sort<T>(h_a);
+    return new cub_sort<T>(d, h_a);
 }
 
 template<typename T>

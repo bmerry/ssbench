@@ -39,9 +39,9 @@ public:
 };
 
 template<typename T>
-scan_algorithm<T> *algorithm_factory<thrust_scan<T> >::create(const std::vector<T> &h_a)
+scan_algorithm<T> *algorithm_factory<thrust_scan<T> >::create(device_type d, const std::vector<T> &h_a)
 {
-    return new thrust_scan<T>(h_a);
+    return new thrust_scan<T>(d, h_a);
 }
 
 template<typename T>
@@ -88,9 +88,9 @@ public:
 };
 
 template<typename T>
-sort_algorithm<T> *algorithm_factory<thrust_sort<T> >::create(const std::vector<T> &h_a)
+sort_algorithm<T> *algorithm_factory<thrust_sort<T> >::create(device_type d, const std::vector<T> &h_a)
 {
-    return new thrust_sort<T>(h_a);
+    return new thrust_sort<T>(d, h_a);
 }
 
 template<typename T>
