@@ -141,6 +141,7 @@ private:
     std::size_t elements;
     cl::Buffer d_keys, d_values;
     cl::Buffer d_sorted_keys, d_sorted_values;
+    cl::Buffer d_tmp_keys, d_tmp_values;
     clogs::Radixsort sort;
 
     typedef typename vector_of<K>::type key_vector;
@@ -154,8 +155,11 @@ public:
         d_values(clogs_traits<V>::make_buffer(ctx, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, h_values)),
         d_sorted_keys(clogs_traits<K>::make_buffer(ctx, CL_MEM_READ_WRITE, h_keys)),
         d_sorted_values(clogs_traits<V>::make_buffer(ctx, CL_MEM_READ_WRITE, h_values)),
+        d_tmp_keys(clogs_traits<K>::make_buffer(ctx, CL_MEM_READ_WRITE, h_keys)),
+        d_tmp_values(clogs_traits<V>::make_buffer(ctx, CL_MEM_READ_WRITE, h_values)),
         sort(ctx, device, clogs_type<K>::type(), clogs_type<V>::type())
     {
+        sort.setTemporaryBuffers(d_tmp_keys, d_tmp_values);
     }
 
     static std::string name() { return "clogs::Radixsort"; }
