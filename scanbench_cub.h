@@ -11,7 +11,7 @@ class cub_scan;
 template<typename T>
 struct algorithm_factory<cub_scan<T> >
 {
-    static scan_algorithm<T> *create(const std::vector<T> &h_a);
+    static scan_algorithm<T> *create(device_type d, const std::vector<T> &h_a);
     static std::string name();
     static std::string api();
 };
@@ -22,7 +22,7 @@ class cub_sort;
 template<typename K, typename V>
 struct algorithm_factory<cub_sort<K, V> >
 {
-    static sort_algorithm<K, V> *create(
+    static sort_algorithm<K, V> *create(device_type d,
         const typename vector_of<K>::type &h_keys,
         const typename vector_of<V>::type &h_values);
     static std::string name();
