@@ -16,13 +16,15 @@ struct algorithm_factory<cub_scan<T> >
     static std::string api();
 };
 
-template<typename T>
+template<typename K, typename V>
 class cub_sort;
 
-template<typename T>
-struct algorithm_factory<cub_sort<T> >
+template<typename K, typename V>
+struct algorithm_factory<cub_sort<K, V> >
 {
-    static sort_algorithm<T> *create(const std::vector<T> &h_a);
+    static sort_algorithm<K, V> *create(
+        const typename vector_of<K>::type &h_keys,
+        const typename vector_of<V>::type &h_values);
     static std::string name();
     static std::string api();
 };
