@@ -23,7 +23,7 @@ struct algorithm_factory
     static std::string api()  { return A::api(); }
 };
 
-template<typename T, typename A, typename... Args>
+template<typename A, typename... Args>
 class registry
 {
 public:
@@ -53,13 +53,15 @@ private:
     static std::vector<entry> entries;
 };
 
-template<typename T, typename A, typename... Args>
-std::vector<typename registry<T, A, Args...>::entry> registry<T, A, Args...>::entries;
+template<typename A, typename... Args>
+std::vector<typename registry<A, Args...>::entry> registry<A, Args...>::entries;
 
 template<typename T>
-using scan_registry = registry<T, scan_algorithm<T>, const std::vector<T> &>;
-template<typename T>
-using sort_registry = registry<T, sort_algorithm<T>, const std::vector<T> &>;
+using scan_registry = registry<scan_algorithm<T>, const std::vector<T> &>;
+template<typename K, typename V>
+using sort_registry = registry<sort_algorithm<K, V>,
+      const typename vector_of<K>::type &,
+      const typename vector_of<V>::type &>;
 
 template<template<typename T> class A>
 class register_scan_algorithm
@@ -71,13 +73,14 @@ public:
     }
 };
 
-template<template<typename T> class A>
+template<template<typename K, typename V> class A>
 class register_sort_algorithm
 {
 public:
     register_sort_algorithm()
     {
-        sort_registry<std::uint32_t>::add_class<A<std::uint32_t>>();
+        sort_registry<std::uint32_t, void>::add_class<A<std::uint32_t, void>>();
+        sort_registry<std::uint32_t, std::uint32_t>::add_class<A<std::uint32_t, std::uint32_t>>();
     }
 };
 

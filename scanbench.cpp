@@ -53,13 +53,14 @@ static po::variables_map processOptions(int argc, char **argv)
         ("help,h",        "show usage")
         ("items,N",       po::value<int>()->default_value(16777216), "Problem size")
         ("iterations,R",  po::value<int>()->default_value(16), "Number of repetitions")
+        ("cpu",           "run algorithms on the CPU")
         ("no-sort",       "disable all sorting algorithms")
         ("no-scan",       "disable all scan algorithms");
 
     std::set<std::string> apis;
     for (const auto &entry : scan_registry<std::int32_t>::get())
         apis.insert(entry.api);
-    for (const auto &entry : sort_registry<std::uint32_t>::get())
+    for (const auto &entry : sort_registry<std::uint32_t, std::uint32_t>::get())
         apis.insert(entry.api);
 
     for (const std::string &api : apis)
@@ -106,6 +107,8 @@ int main(int argc, char **argv)
     const int items = vm["items"].as<int>();
 
     device_type d = DEVICE_TYPE_GPU;
+    if (vm.count("cpu"))
+        d = DEVICE_TYPE_CPU;
 
     if (!vm.count("no-scan"))
     {
@@ -133,18 +136,39 @@ int main(int argc, char **argv)
 
     if (!vm.count("no-sort"))
     {
-        std::vector<std::uint32_t> rnd(items);
-        for (std::size_t i = 0; i < rnd.size(); i++)
-            rnd[i] = (std::uint32_t) i * 0x9E3779B9;
+        std::vector<std::uint32_t> keys(items);
+        std::vector<std::uint32_t> values(items);
+        for (std::size_t i = 0; i < keys.size(); i++)
+        {
+            keys[i] = (std::uint32_t) i * 0x9E3779B9;
+            values[i] = i;
+        }
 
         std::cout << "Sort\n\n";
-        for (const auto &entry : sort_registry<std::uint32_t>::get())
+        for (const auto &entry : sort_registry<std::uint32_t, void>::get())
         {
             if (enabled(vm, entry.api))
             {
                 try
                 {
-                    auto ptr = entry.factory(d, rnd);
+                    auto ptr = entry.factory(d, keys, void_vector());
+                    time_algorithm(*ptr, entry.name, items, iterations);
+                }
+                catch (device_not_supported)
+                {
+                }
+            }
+        }
+        std::cout << "\n";
+
+        std::cout << "Sort by key\n\n";
+        for (const auto &entry : sort_registry<std::uint32_t, std::uint32_t>::get())
+        {
+            if (enabled(vm, entry.api))
+            {
+                try
+                {
+                    auto ptr = entry.factory(d, keys, values);
                     time_algorithm(*ptr, entry.name, items, iterations);
                 }
                 catch (device_not_supported)

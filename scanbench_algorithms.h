@@ -27,6 +27,34 @@ class device_not_supported
 {
 };
 
+struct void_vector
+{
+    void_vector() {}
+    explicit void_vector(std::size_t size) {}
+
+    int operator[](std::size_t idx) const
+    {
+        return 0;
+    }
+
+    std::size_t size() const
+    {
+        return 0;
+    }
+};
+
+template<typename T>
+struct vector_of
+{
+    typedef std::vector<T> type;
+};
+
+template<>
+struct vector_of<void>
+{
+    typedef void_vector type;
+};
+
 class algorithm
 {
 public:
@@ -74,28 +102,97 @@ public:
     }
 };
 
-template<typename T>
-class sort_algorithm : public algorithm
+template<typename K, typename V>
+struct sort_traits
 {
 private:
-    std::vector<T> expected;
-    virtual std::vector<T> get() const = 0;
-public:
-    typedef T value_type;
-
-    sort_algorithm(const std::vector<T> &in)
-        : expected(in)
+    class compare_index
     {
-        std::sort(expected.begin(), expected.end());
+    private:
+        const std::vector<K> &keys;
+
+    public:
+        explicit compare_index(const std::vector<K> &keys) : keys(keys)
+        {
+        }
+
+        bool operator()(std::size_t a, std::size_t b) const
+        {
+            return keys[a] < keys[b];
+        }
+    };
+
+public:
+    static void sort_by_key(std::vector<K> &keys, std::vector<V> &values)
+    {
+        std::vector<std::size_t> permute(keys.size());
+        for (std::size_t i = 0; i < keys.size(); i++)
+            permute[i] = i;
+        std::stable_sort(permute.begin(), permute.end(), compare_index(keys));
+
+        std::vector<K> new_keys;
+        std::vector<V> new_values;
+        new_keys.reserve(keys.size());
+        new_values.reserve(values.size());
+        for (std::size_t i = 0; i < keys.size(); i++)
+        {
+            std::size_t idx = permute[i];
+            new_keys.push_back(keys[idx]);
+            new_values.push_back(values[idx]);
+        }
+        keys.swap(new_keys);
+        values.swap(new_values);
+    }
+};
+
+template<typename K>
+struct sort_traits<K, void>
+{
+public:
+    static void sort_by_key(std::vector<K> &keys, void_vector &values)
+    {
+        std::stable_sort(keys.begin(), keys.end());
+    }
+};
+
+template<typename K, typename V>
+class sort_algorithm : public algorithm
+{
+public:
+    typedef K key_type;
+    typedef V value_type;
+    typedef typename vector_of<K>::type key_vector;
+    typedef typename vector_of<V>::type value_vector;
+
+private:
+    key_vector expected_keys;
+    value_vector expected_values;
+    virtual std::pair<key_vector, value_vector> get() const = 0;
+
+public:
+    sort_algorithm(const key_vector &keys, const value_vector &values)
+        : expected_keys(keys), expected_values(values)
+    {
+        sort_traits<K, V>::sort_by_key(expected_keys, expected_values);
     }
 
     virtual void validate() const
     {
-        std::vector<T> out = get();
-        assert(out.size() == expected.size());
-        for (std::size_t i = 0; i < expected.size(); i++)
-            if (!check_equal(i, expected[i], out[i]))
+        std::pair<key_vector, value_vector> out = get();
+        const key_vector &keys = out.first;
+        const value_vector &values = out.second;
+        assert(keys.size() == expected_keys.size());
+        assert(values.size() == expected_values.size());
+        for (std::size_t i = 0; i < expected_keys.size(); i++)
+        {
+            if (!check_equal(i, expected_keys[i], keys[i]))
                 break;
+        }
+        for (std::size_t i = 0; i < expected_values.size(); i++)
+        {
+            if (!check_equal(i, expected_values[i], values[i]))
+                break;
+        }
     }
 };
 

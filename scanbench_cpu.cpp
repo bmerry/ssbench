@@ -115,50 +115,62 @@ static register_scan_algorithm<my_parallel_scan> register_my_parallel_scan;
 
 /************************************************************************/
 
-template<typename T>
-class cpu_sort : public sort_algorithm<T>
+template<typename K, typename V>
+class cpu_sort : public sort_algorithm<K, V>
 {
 protected:
-    std::vector<T> a;
-    std::vector<T> target;
+    typedef typename vector_of<K>::type key_vector;
+    typedef typename vector_of<V>::type value_vector;
+    key_vector keys, sorted_keys;
+    value_vector values, sorted_values;
 
 public:
-    cpu_sort(device_type d, const std::vector<T> &h_a)
-        : sort_algorithm<T>(h_a), a(h_a), target(h_a.size())
+    cpu_sort(device_type d, const key_vector &h_keys, const value_vector &h_values)
+        : sort_algorithm<K, V>(h_keys, h_values),
+        keys(h_keys),
+        sorted_keys(h_keys.size()),
+        values(h_values),
+        sorted_values(h_values.size())
     {
         if (d != DEVICE_TYPE_CPU)
             throw device_not_supported();
     }
     static std::string api() { return "cpu"; }
     virtual void finish() override {}
-    virtual std::vector<T> get() const override { return target; }
+    virtual std::pair<key_vector, value_vector> get() const override
+    {
+        return std::make_pair(sorted_keys, sorted_values);
+    }
 };
 
-template<typename T>
-class serial_sort : public cpu_sort<T>
+template<typename K, typename V>
+class serial_sort : public cpu_sort<K, V>
 {
 public:
-    using cpu_sort<T>::cpu_sort;
+    using cpu_sort<K, V>::cpu_sort;
 
     static std::string name() { return "serial sort"; }
     virtual void run() override
     {
-        this->target = this->a;
-        std::sort(this->target.begin(), this->target.end());
+        this->sorted_keys = this->keys;
+        this->sorted_values = this->values;
+        sort_traits<K, V>::sort_by_key(this->sorted_keys, this->sorted_values);
     }
 };
 
-template<typename T>
-class parallel_sort : public cpu_sort<T>
+template<typename K, typename V>
+class parallel_sort : public cpu_sort<K, V>
 {
 public:
-    using cpu_sort<T>::cpu_sort;
+    using cpu_sort<K, V>::cpu_sort;
 
     static std::string name() { return "parallel sort"; }
     virtual void run() override
     {
-        this->target = this->a;
-        __gnu_parallel::sort(this->target.begin(), this->target.end());
+        this->sorted_keys = this->keys;
+        this->sorted_values = this->values;
+        // TODO!
+        // __gnu_parallel::sort(this->target.begin(), this->target.end());
     }
 };
 
