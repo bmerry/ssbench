@@ -111,9 +111,9 @@ private:
     d_value_vector d_values, d_sorted_values;
 
 public:
-    thrust_sort(device_type d, const key_vector &h_values, const value_vector &h_values)
+    thrust_sort(device_type d, const key_vector &h_keys, const value_vector &h_values)
         : sort_algorithm<K, V>(h_keys, h_values),
-        d_keys(h_keys), d_sorted_keys(h_keys.size())
+        d_keys(h_keys), d_sorted_keys(h_keys.size()),
         d_values(h_values), d_sorted_values(h_values.size())
     {
         if (d != DEVICE_TYPE_GPU)

@@ -46,15 +46,15 @@ struct cub_double_vector : public boost::noncopyable
     cub::DoubleBuffer<T> ptrs;
     std::size_t elements;
 
-    double_vector() : ptrs(NULL, NULL), elements(0) {}
-    explicit double_vector(std::size_t size)
+    cub_double_vector() : ptrs(NULL, NULL), elements(0) {}
+    explicit cub_double_vector(std::size_t size)
     {
-        std::size_t bytes = size() * sizeof(T);
+        std::size_t bytes = size * sizeof(T);
         cudaMalloc(&ptrs.d_buffers[0], bytes);
         cudaMalloc(&ptrs.d_buffers[1], bytes);
         elements = size;
     }
-    ~double_vector()
+    ~cub_double_vector()
     {
         if (ptrs.d_buffers[0])
             cudaFree(ptrs.d_buffers[0]);
@@ -68,8 +68,8 @@ struct cub_double_vector : public boost::noncopyable
 template<typename T>
 struct cub_traits
 {
-    typedef cuda_vector vector;
-    typedef cub_double_vector double_vector;
+    typedef cuda_vector<T> vector;
+    typedef cub_double_vector<T> double_vector;
 
     static void copy(const vector &src, double_vector &trg)
     {
@@ -113,7 +113,7 @@ struct cub_traits<void>
     {
     }
 
-    static void_vector get(const vector &v)
+    static void_vector get(const double_vector &v)
     {
         return void_vector();
     }
@@ -122,9 +122,11 @@ struct cub_traits<void>
     static void sort(cub_double_vector<K> &keys, double_vector &values,
                      void *d_temp, std::size_t &temp_bytes)
     {
-        cub::DeviceRadixSort::SortKeys(d_temp, temp_bytes, keys, keys.elements);
+        cub::DeviceRadixSort::SortKeys(d_temp, temp_bytes, keys.ptrs, keys.elements);
     }
 };
+
+/********************************************************************/
 
 template<typename T>
 class cub_scan : public scan_algorithm<T>
@@ -240,7 +242,7 @@ public:
     virtual void run()
     {
         cub_traits<K>::copy(d_keys, d_sorted_keys);
-        cub_traits<K>::copy(d_values, d_sorted_values);
+        cub_traits<V>::copy(d_values, d_sorted_values);
         cub_traits<V>::template sort<K>(d_sorted_keys, d_sorted_values, d_temp, temp_bytes);
     }
 
