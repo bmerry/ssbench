@@ -7,6 +7,7 @@
 #include <omp.h>
 #include "scanbench_algorithms.h"
 #include "scanbench_register.h"
+#include "hostutils.h"
 
 template<typename T>
 class cpu_scan : public scan_algorithm<T>
@@ -154,7 +155,7 @@ public:
     {
         this->sorted_keys = this->keys;
         this->sorted_values = this->values;
-        sort_traits<K, V>::sort_by_key(this->sorted_keys, this->sorted_values);
+        sort_by_key(this->sorted_keys, this->sorted_values);
     }
 };
 
@@ -169,8 +170,8 @@ public:
     {
         this->sorted_keys = this->keys;
         this->sorted_values = this->values;
-        // TODO!
-        // __gnu_parallel::sort(this->target.begin(), this->target.end());
+
+        parallel_sort_by_key(this->sorted_keys, this->sorted_values);
     }
 };
 

@@ -11,6 +11,7 @@
 #include <utility>
 #include <cassert>
 #include <iostream>
+#include "hostutils.h"
 
 enum device_type
 {
@@ -103,59 +104,6 @@ public:
 };
 
 template<typename K, typename V>
-struct sort_traits
-{
-private:
-    class compare_index
-    {
-    private:
-        const std::vector<K> &keys;
-
-    public:
-        explicit compare_index(const std::vector<K> &keys) : keys(keys)
-        {
-        }
-
-        bool operator()(std::size_t a, std::size_t b) const
-        {
-            return keys[a] < keys[b];
-        }
-    };
-
-public:
-    static void sort_by_key(std::vector<K> &keys, std::vector<V> &values)
-    {
-        std::vector<std::size_t> permute(keys.size());
-        for (std::size_t i = 0; i < keys.size(); i++)
-            permute[i] = i;
-        std::stable_sort(permute.begin(), permute.end(), compare_index(keys));
-
-        std::vector<K> new_keys;
-        std::vector<V> new_values;
-        new_keys.reserve(keys.size());
-        new_values.reserve(values.size());
-        for (std::size_t i = 0; i < keys.size(); i++)
-        {
-            std::size_t idx = permute[i];
-            new_keys.push_back(keys[idx]);
-            new_values.push_back(values[idx]);
-        }
-        keys.swap(new_keys);
-        values.swap(new_values);
-    }
-};
-
-template<typename K>
-struct sort_traits<K, void>
-{
-public:
-    static void sort_by_key(std::vector<K> &keys, void_vector &values)
-    {
-        std::stable_sort(keys.begin(), keys.end());
-    }
-};
-
-template<typename K, typename V>
 class sort_algorithm : public algorithm
 {
 public:
@@ -173,7 +121,7 @@ public:
     sort_algorithm(const key_vector &keys, const value_vector &values)
         : expected_keys(keys), expected_values(values)
     {
-        sort_traits<K, V>::sort_by_key(expected_keys, expected_values);
+        sort_by_key(expected_keys, expected_values);
     }
 
     virtual void validate() const

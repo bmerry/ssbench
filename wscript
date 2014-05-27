@@ -94,7 +94,7 @@ def configure(ctx):
         uselib_store = 'PROGRAM_OPTIONS')
 
 def build(ctx):
-    sources = ['scanbench.cpp', 'scanbench_cpu.cpp', 'clutils.cpp']
+    sources = ['scanbench.cpp', 'scanbench_cpu.cpp', 'clutils.cpp', 'hostutils.cpp']
     use = ['PROGRAM_OPTIONS']
     need_cuda = False
     features = ['cxx']
