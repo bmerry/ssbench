@@ -162,8 +162,6 @@ int main(int argc, char **argv)
     device_type d = DEVICE_TYPE_GPU;
     if (vm.count("cpu"))
         d = DEVICE_TYPE_CPU;
-    if (csv)
-        std::cout << "algorithm,api,N,iter,time,rate\n";
 
     if (enabled_algorithm("scan"))
     {
