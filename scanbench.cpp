@@ -15,7 +15,44 @@ namespace po = boost::program_options;
 
 typedef std::chrono::high_resolution_clock clock_type;
 
-static void time_algorithm(algorithm &alg, const std::string &name, size_t N, int iter)
+static bool csv = false;
+
+static void output_header(const std::string &name)
+{
+    if (!csv)
+    {
+        std::cout << name << "\n\n";
+    }
+}
+
+static void output_result(
+    const std::string &algname, const std::string &api, const std::string &name,
+    double time, std::size_t N, int iter)
+{
+    double rate = (double) N * iter / time;
+    if (csv)
+    {
+        std::cout << algname << "," << api << "," << N << "," << iter << "," << time << "," << rate << '\n';
+    }
+    else
+    {
+        std::cout << std::setw(20) << std::fixed << std::setprecision(1);
+        std::cout << rate * 1e-6 << " M/s\t";
+        std::cout << std::setw(0) << std::setprecision(6);
+        std::cout << time << "\t" << name << '\n';
+    }
+}
+
+static void output_footer()
+{
+    if (!csv)
+        std::cout << '\n';
+}
+
+static void time_algorithm(
+    algorithm &alg,
+    const std::string &algname, const std::string &api, const std::string &name,
+    std::size_t N, int iter)
 {
     // Warmup
     alg.run();
@@ -32,11 +69,7 @@ static void time_algorithm(algorithm &alg, const std::string &name, size_t N, in
 
     std::chrono::duration<double> elapsed(stop - start);
     double time = elapsed.count();
-    double rate = (double) N * iter / time / 1e6;
-    std::cout << std::setw(20) << std::fixed << std::setprecision(1);
-    std::cout << rate << " M/s\t";
-    std::cout << std::setw(0) << std::setprecision(6);
-    std::cout << time << "\t" << name << '\n';
+    output_result(algname, api, name, time, N, iter);
 }
 
 static void usage(std::ostream &o, const po::options_description &opts)
@@ -53,6 +86,7 @@ static po::variables_map processOptions(int argc, char **argv)
         ("help,h",        "show usage")
         ("items,N",       po::value<int>()->default_value(16777216), "Problem size")
         ("iterations,R",  po::value<int>()->default_value(16), "Number of repetitions")
+        ("csv",           "output results in CSV format")
         ("cpu",           "run algorithms on the CPU")
         ("no-sort",       "disable all sorting algorithms")
         ("no-scan",       "disable all scan algorithms");
@@ -109,6 +143,11 @@ int main(int argc, char **argv)
     device_type d = DEVICE_TYPE_GPU;
     if (vm.count("cpu"))
         d = DEVICE_TYPE_CPU;
+    if (vm.count("csv"))
+    {
+        std::cout << "algorithm,api,N,iter,time,rate\n";
+        csv = true;
+    }
 
     if (!vm.count("no-scan"))
     {
@@ -116,7 +155,7 @@ int main(int argc, char **argv)
         for (std::size_t i = 0; i < a.size(); i++)
             a[i] = i;
 
-        std::cout << "Scan\n\n";
+        output_header("Scan");
         for (const auto &entry : scan_registry<std::int32_t>::get())
         {
             if (enabled(vm, entry.api))
@@ -124,14 +163,14 @@ int main(int argc, char **argv)
                 try
                 {
                     auto ptr = entry.factory(d, a);
-                    time_algorithm(*ptr, entry.name, items, iterations);
+                    time_algorithm(*ptr, "scan", entry.api, entry.name, items, iterations);
                 }
                 catch (device_not_supported)
                 {
                 }
             }
         }
-        std::cout << "\n";
+        output_footer();
     }
 
     if (!vm.count("no-sort"))
@@ -144,7 +183,7 @@ int main(int argc, char **argv)
             values[i] = i;
         }
 
-        std::cout << "Sort\n\n";
+        output_header("Sort");
         for (const auto &entry : sort_registry<std::uint32_t, void>::get())
         {
             if (enabled(vm, entry.api))
@@ -152,16 +191,16 @@ int main(int argc, char **argv)
                 try
                 {
                     auto ptr = entry.factory(d, keys, void_vector());
-                    time_algorithm(*ptr, entry.name, items, iterations);
+                    time_algorithm(*ptr, "sort", entry.api, entry.name, items, iterations);
                 }
                 catch (device_not_supported)
                 {
                 }
             }
         }
-        std::cout << "\n";
+        output_footer();
 
-        std::cout << "Sort by key\n\n";
+        output_header("Sort by key");
         for (const auto &entry : sort_registry<std::uint32_t, std::uint32_t>::get())
         {
             if (enabled(vm, entry.api))
@@ -169,14 +208,14 @@ int main(int argc, char **argv)
                 try
                 {
                     auto ptr = entry.factory(d, keys, values);
-                    time_algorithm(*ptr, entry.name, items, iterations);
+                    time_algorithm(*ptr, "sort-by-key", entry.api, entry.name, items, iterations);
                 }
                 catch (device_not_supported)
                 {
                 }
             }
         }
-        std::cout << "\n";
+        output_footer();
     }
 
     return 0;
