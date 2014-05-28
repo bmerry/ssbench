@@ -71,7 +71,7 @@ def check_cuda_library(self, func, option, includes_add, libpath_add, *args, **k
 def configure(ctx):
     ctx.load('compiler_cxx')
 
-    ctx.env.append_value('CXXFLAGS', ['-Wall', '-O3', '-std=c++11', '-fopenmp'])
+    ctx.env.append_value('CXXFLAGS', ['-std=c++11', '-fopenmp'])
     ctx.env.append_value('LINKFLAGS', ['-fopenmp'])
 
     ctx.env.have_thrust = ctx.check_cuda_library(ctx.check_cuda, ctx.options.with_thrust, [''], [],
@@ -98,6 +98,8 @@ def build(ctx):
     use = ['PROGRAM_OPTIONS']
     need_cuda = False
     features = ['cxx']
+
+    ctx.env.append_value('CXXFLAGS', ['-Wall', '-O3'])
 
     ctx.env['NVCC_XCOMPILER'] = '-Xcompiler=%s'
     for arch, code in [('20', '20'), ('20', '21'), ('30', '30'), ('32', '32'), ('35', '35')]:
