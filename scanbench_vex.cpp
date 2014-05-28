@@ -94,24 +94,7 @@ public:
 };
 
 
-template<typename T>
-class vex_clogs_scan : public vex_scan<T>
-{
-public:
-    using vex_scan<T>::vex_scan;
-
-    static std::string name() { return "vex::clogs::exclusive_scan"; }
-    static std::string api() { return "vex"; }
-    virtual void finish() override { this->ctx.finish(); }
-
-    virtual void run() override
-    {
-        vex::clogs::exclusive_scan(this->d_a, this->d_scan);
-    }
-};
-
 static register_scan_algorithm<vex_scan> register_vex_scan;
-static register_scan_algorithm<vex_clogs_scan> register_vex_clogs_scan;
 
 /************************************************************************/
 
