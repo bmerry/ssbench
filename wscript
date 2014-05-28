@@ -71,6 +71,8 @@ def check_cuda_library(self, func, option, includes_add, libpath_add, *args, **k
 def configure(ctx):
     ctx.load('compiler_cxx')
 
+    ctx.add_os_flags('NVCC')
+    ctx.add_os_flags('CUDAFLAGS')
     ctx.env.append_value('CXXFLAGS', ['-std=c++11', '-fopenmp'])
     ctx.env.append_value('LINKFLAGS', ['-fopenmp'])
 
