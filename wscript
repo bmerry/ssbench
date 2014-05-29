@@ -96,7 +96,7 @@ def configure(ctx):
         uselib_store = 'PROGRAM_OPTIONS')
 
 def build(ctx):
-    sources = ['scanbench.cpp', 'scanbench_cpu.cpp', 'clutils.cpp', 'hostutils.cpp']
+    sources = ['ssbench.cpp', 'cpu.cpp', 'clutils.cpp', 'hostutils.cpp']
     use = ['PROGRAM_OPTIONS']
     need_cuda = False
     features = ['cxx']
@@ -109,24 +109,24 @@ def build(ctx):
     ctx.env.append_value('DEFINES', ['__CL_ENABLE_EXCEPTIONS'])
 
     if ctx.env.have_clogs:
-        sources += ['scanbench_clogs.cpp']
+        sources += ['clogs.cpp']
         use += ['CLOGS']
     if ctx.env.have_compute:
-        sources += ['scanbench_compute.cpp']
+        sources += ['compute.cpp']
         use += ['COMPUTE']
     if ctx.env.have_vexcl:
-        sources += ['scanbench_vex.cpp']
+        sources += ['vex.cpp']
         use += ['VEXCL']
     if ctx.env.have_bolt:
-        sources += ['scanbench_bolt.cpp']
+        sources += ['bolt.cpp']
         use += ['BOLT']
 
     if ctx.env.have_thrust:
-        sources += ['scanbench_thrust.cu', 'scanbench_thrust_register.cpp']
+        sources += ['thrust.cu', 'thrust_register.cpp']
         use += ['THRUST']
         need_cuda = True
     if ctx.env.have_cub:
-        sources += ['scanbench_cub.cu', 'scanbench_cub_register.cpp']
+        sources += ['cub.cu', 'cub_register.cpp']
         use += ['CUB']
         need_cuda = True
 
@@ -135,4 +135,4 @@ def build(ctx):
     else:
         features += ['cxxprogram']
 
-    ctx(features = features, source = sources, target = 'scanbench', use = use)
+    ctx(features = features, source = sources, target = 'ssbench', use = use)

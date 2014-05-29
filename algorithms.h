@@ -144,7 +144,7 @@ public:
     }
 };
 
-/* See scanbench_register for the definition. It is declared here so that
+/* See register for the definition. It is declared here so that
  * it can be specialised by CUDA code that cannot include C++11 code.
  */
 template<typename A>

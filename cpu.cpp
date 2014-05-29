@@ -5,8 +5,8 @@
 #include <parallel/algorithm>
 #include <parallel/numeric>
 #include <omp.h>
-#include "scanbench_algorithms.h"
-#include "scanbench_register.h"
+#include "algorithms.h"
+#include "register.h"
 #include "hostutils.h"
 
 template<typename T>

@@ -4,7 +4,7 @@
 #include <memory>
 #include <functional>
 #include <utility>
-#include "scanbench_algorithms.h"
+#include "algorithms.h"
 
 /* Creates a new instance of class A. Note that CUDA-based APIs provide
  * specialisations because CUDA does not support C++11.

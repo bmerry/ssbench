@@ -8,8 +8,8 @@
 #include <numeric>
 #include <set>
 #include <boost/program_options.hpp>
-#include "scanbench_algorithms.h"
-#include "scanbench_register.h"
+#include "algorithms.h"
+#include "register.h"
 
 namespace po = boost::program_options;
 
@@ -113,7 +113,7 @@ static void time_entry(
 
 static void usage(std::ostream &o, const po::options_description &opts)
 {
-    o << "Usage: scanbench [options]\n\n";
+    o << "Usage: ssbench [options]\n\n";
     o << opts;
 }
 

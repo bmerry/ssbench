@@ -6,8 +6,8 @@
 #include <boost/compute/algorithm/exclusive_scan.hpp>
 #include <boost/compute/algorithm/sort.hpp>
 #include <boost/compute/algorithm/sort_by_key.hpp>
-#include "scanbench_algorithms.h"
-#include "scanbench_register.h"
+#include "algorithms.h"
+#include "register.h"
 #include "clutils.h"
 
 namespace compute = boost::compute;

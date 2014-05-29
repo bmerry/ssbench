@@ -3,8 +3,8 @@
 #include <string>
 #include <cstddef>
 #include <boost/utility.hpp>
-#include "scanbench_algorithms.h"
-#include "scanbench_cub.h"
+#include "algorithms.h"
+#include "cub.h"
 
 template<typename T>
 class cuda_vector : public boost::noncopyable

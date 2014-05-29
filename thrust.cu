@@ -3,8 +3,8 @@
 #include <thrust/sort.h>
 #include <vector>
 #include <string>
-#include "scanbench_algorithms.h"
-#include "scanbench_thrust.h"
+#include "algorithms.h"
+#include "thrust.h"
 
 template<typename T>
 struct thrust_traits

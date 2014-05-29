@@ -4,8 +4,8 @@
 #include <vexcl/vexcl.hpp>
 #include <vexcl/external/clogs.hpp>
 #include <stdexcept>
-#include "scanbench_algorithms.h"
-#include "scanbench_register.h"
+#include "algorithms.h"
+#include "register.h"
 #include "clutils.h"
 
 template<typename T>

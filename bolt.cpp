@@ -4,8 +4,8 @@
 #include <bolt/cl/copy.h>
 #include <bolt/cl/device_vector.h>
 #include <stdexcept>
-#include "scanbench_algorithms.h"
-#include "scanbench_register.h"
+#include "algorithms.h"
+#include "register.h"
 #include "clutils.h"
 
 template<typename T>

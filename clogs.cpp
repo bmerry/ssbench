@@ -3,8 +3,8 @@
 #undef CL_VERSION_1_2
 #include <clogs/scan.h>
 #include <clogs/radixsort.h>
-#include "scanbench_algorithms.h"
-#include "scanbench_register.h"
+#include "algorithms.h"
+#include "register.h"
 #include "clutils.h"
 
 template<typename T>
