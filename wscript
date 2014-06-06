@@ -133,7 +133,13 @@ def build(ctx):
         use += ['CUB']
         need_cuda = True
     if ctx.env.have_mgpu:
-        sources += ['mgpu.cu', 'mgpu_register.cpp']
+        sources += [
+            'mgpu.cu',
+            os.path.join(ctx.options.with_mgpu, 'src', 'mgpucontext.cu'),
+            os.path.join(ctx.options.with_mgpu, 'src', 'mgpuutil.cpp')
+        ]
+        use += ['MGPU']
+        need_cuda = True
 
     if need_cuda:
         features += ['cuda', 'cudaprogram']
