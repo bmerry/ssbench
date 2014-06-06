@@ -85,6 +85,7 @@ def configure(ctx):
         header_name = 'cub/cub.cuh', uselib_store = 'CUB')
     ctx.env.have_mgpu = ctx.check_cuda_library(ctx.check_cuda, ctx.options.with_mgpu, ['include'], [],
         header_name = 'moderngpu.cuh', uselib_store = 'MGPU')
+    ctx.env.mgpu_path = ctx.options.with_mgpu
     ctx.env.have_clogs = ctx.check_library(ctx.check_cxx, ctx.options.with_clogs, ['include'], ['lib'],
         header_name = 'clogs/clogs.h', lib = ['clogs', 'OpenCL'], uselib_store = 'CLOGS')
     ctx.env.have_compute = ctx.check_library(ctx.check_cxx, ctx.options.with_compute, ['include'], [],
@@ -133,12 +134,17 @@ def build(ctx):
         use += ['CUB']
         need_cuda = True
     if ctx.env.have_mgpu:
+        mgpuutil = ctx(
+                features = ['cuda', 'cxx', 'objects'],
+                target = 'mgpuutil_o',
+                source = ctx.root.find_resource(os.path.join(ctx.env.mgpu_path, 'src', 'mgpuutil.cpp')),
+                use = ['MGPU'])
+        mgpuutil.mappings['.cpp'] = c_hook
         sources += [
             'mgpu.cu',
-            os.path.join(ctx.options.with_mgpu, 'src', 'mgpucontext.cu'),
-            os.path.join(ctx.options.with_mgpu, 'src', 'mgpuutil.cpp')
+            ctx.root.find_resource(os.path.join(ctx.env.mgpu_path, 'src', 'mgpucontext.cu')),
         ]
-        use += ['MGPU']
+        use += ['MGPU', 'mgpuutil_o']
         need_cuda = True
 
     if need_cuda:

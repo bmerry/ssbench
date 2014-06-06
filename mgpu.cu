@@ -4,7 +4,8 @@
 #include <cstddef>
 #include <boost/utility.hpp>
 #include "algorithms.h"
-#include "mgpucontext.h"
+#include "register.h"
+#include "moderngpu.cuh"
 
 class mgpu_algorithm
 {
@@ -23,25 +24,25 @@ public:
     template<typename T>
     void create(MGPU_MEM(T) &out, std::size_t elements) const
     {
-        ctx->Malloc(elements).swap(out);
+        ctx->Malloc<T>(elements).swap(out);
     }
 
     template<typename T>
     static void copy(const std::vector<T> &src, MGPU_MEM(T) &dst)
     {
-        dst.FromHost(src);
+        dst->FromHost(src);
     }
 
     template<typename T>
     static void copy(const MGPU_MEM(T) &src, MGPU_MEM(T) &dst)
     {
-        src.ToDevice(dst.get(), dst.Size());
+        src->ToDevice(dst->get(), dst->Size());
     }
 
     template<typename T>
     static void copy(const MGPU_MEM(T) &src, std::vector<T> &dst)
     {
-        src.ToHost(dst);
+        src->ToHost(dst);
     }
 
     template<typename T>
@@ -52,8 +53,8 @@ public:
     template<typename T>
     void scan(const MGPU_MEM(T) &src, MGPU_MEM(T) &dst) const
     {
-        mgpu::Scan<mgpu::MgpuScanTypeExr>(
-            src->get(), src->Size(), 0, mgpu::plus<T>(), NULL, NULL, dst->get(), *ctx);
+        mgpu::Scan<mgpu::MgpuScanTypeExc>(
+            src->get(), src->Size(), T(0), mgpu::plus<T>(), (T *) NULL, (T *) NULL, dst->get(), *ctx);
     }
 
     template<typename K>
@@ -61,10 +62,10 @@ public:
     {
     }
 
-    template<typename K, typename V>
+    template<typename K>
     void sort(MGPU_MEM(K) &keys) const
     {
-        mgpu::MergesortKeys(keys->get(), keys->Size(), mgpu::less<T>(), *ctx);
+        mgpu::MergesortKeys(keys->get(), keys->Size(), mgpu::less<K>(), *ctx);
     }
 
     template<typename K, typename V>
@@ -73,9 +74,9 @@ public:
     }
 
     template<typename K, typename V>
-    void pre_sort_by_key(MGPU_MEM(K) &keys, MGPU_MEM(V) &values) const
+    void sort_by_key(MGPU_MEM(K) &keys, MGPU_MEM(V) &values) const
     {
-        mgpu::MergesortPairs(keys->get(), values->get(), keys->Size(), mgpu::less<T>(), *ctx);
+        mgpu::MergesortPairs(keys->get(), values->get(), keys->Size(), mgpu::less<K>(), *ctx);
     }
 
     static void finish()
@@ -89,7 +90,7 @@ public:
     {
         if (d != DEVICE_TYPE_GPU)
             throw device_not_supported();
-        ctx = createCudaDevice(0);
+        ctx = mgpu::CreateCudaDevice(0);
     }
 };
 
