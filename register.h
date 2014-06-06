@@ -8,6 +8,7 @@
 #include <functional>
 #include <utility>
 #include <boost/ptr_container/ptr_vector.hpp>
+#include <boost/cstdint.hpp>
 #include "algorithms.h"
 
 class entry_base
@@ -119,7 +120,7 @@ class register_scan_algorithm
 public:
     register_scan_algorithm()
     {
-        registry<scan_entry<std::int32_t> >::add_class<A>();
+        registry<scan_entry<boost::int32_t> >::add_class<A>();
     }
 };
 
@@ -129,7 +130,7 @@ class register_sort_algorithm
 public:
     register_sort_algorithm()
     {
-        registry<sort_entry<std::uint32_t> >::add_class<A>();
+        registry<sort_entry<boost::uint32_t> >::add_class<A>();
     }
 };
 
@@ -139,7 +140,7 @@ class register_sort_by_key_algorithm
 public:
     register_sort_by_key_algorithm()
     {
-        registry<sort_by_key_entry<std::uint32_t, std::uint32_t> >::add_class<A>();
+        registry<sort_by_key_entry<boost::uint32_t, boost::uint32_t> >::add_class<A>();
     }
 };
 

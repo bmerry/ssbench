@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <vector>
 #include <boost/iterator/iterator_facade.hpp>
+#include <boost/cstdint.hpp>
 #include "hostutils.h"
 
 template<typename I1, typename I2>
@@ -109,5 +110,5 @@ void parallel_sort_by_key(K &keys, V &values)
     parallel_sort_by_key(keys.begin(), keys.end(), values.begin());
 }
 
-template void sort_by_key<std::vector<std::uint32_t>, std::vector<std::uint32_t> >(std::vector<std::uint32_t> &, std::vector<std::uint32_t> &);
-template void parallel_sort_by_key<std::vector<std::uint32_t>, std::vector<std::uint32_t> >(std::vector<std::uint32_t> &, std::vector<std::uint32_t> &);
+template void sort_by_key<std::vector<boost::uint32_t>, std::vector<boost::uint32_t> >(std::vector<boost::uint32_t> &, std::vector<boost::uint32_t> &);
+template void parallel_sort_by_key<std::vector<boost::uint32_t>, std::vector<boost::uint32_t> >(std::vector<boost::uint32_t> &, std::vector<boost::uint32_t> &);
