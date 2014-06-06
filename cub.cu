@@ -18,9 +18,9 @@ public:
 
     explicit cuda_vector(std::size_t elements)
     {
-        std::size_t bytes = size * sizeof(T);
+        std::size_t bytes = elements * sizeof(T);
         cudaMalloc(&ptr, bytes);
-        elements = v.size();
+        this->elements = elements;
     }
 
     ~cuda_vector()
@@ -29,19 +29,25 @@ public:
             cudaFree(ptr);
     }
 
-    T *data() { return ptr; }
-    const T *data() const { return ptr; }
+    T *data() const { return ptr; }
 
     std::size_t size() const
     {
         return elements;
+    }
+
+    void swap(cuda_vector<T> &other)
+    {
+        std::swap(ptr, other.ptr);
+        std::swap(elements, other.elements);
     }
 };
 
 template<typename T>
 struct cub_double_vector : public boost::noncopyable
 {
-    cub::DoubleBuffer<T> ptrs;
+    // mutable because Current() doesn't work on const objects
+    mutable cub::DoubleBuffer<T> ptrs;
     std::size_t elements;
 
     cub_double_vector() : ptrs(NULL, NULL), elements(0) {}
@@ -61,6 +67,12 @@ struct cub_double_vector : public boost::noncopyable
     }
 
     std::size_t size() const { return elements; }
+
+    void swap(cub_double_vector<T> &other)
+    {
+        std::swap(ptrs, other.ptrs);
+        std::swap(elements, other.elements);
+    }
 };
 
 class cub_algorithm
@@ -81,13 +93,13 @@ public:
     template<typename T>
     static void create(cuda_vector<T> &out, std::size_t elements)
     {
-        out = cuda_vector<T>(elements);
+        cuda_vector<T>(elements).swap(out);
     }
 
     template<typename T>
     static void create(cub_double_vector<T> &out, std::size_t elements)
     {
-        out = cub_double_vector(elements);
+        cub_double_vector<T>(elements).swap(out);
     }
 
     template<typename T>
@@ -97,9 +109,15 @@ public:
     }
 
     template<typename T>
-    static void copy(const cuda_vector<T> &src, const cub_double_vector<T> &dst)
+    static void copy(const cuda_vector<T> &src, cub_double_vector<T> &dst)
     {
         cudaMemcpy(dst.ptrs.Current(), src.data(), src.size() * sizeof(T), cudaMemcpyDeviceToDevice);
+    }
+
+    template<typename T>
+    static void copy(const cuda_vector<T> &src, std::vector<T> &dst)
+    {
+        cudaMemcpy(&dst[0], src.data(), src.size() * sizeof(T), cudaMemcpyDeviceToHost);
     }
 
     template<typename T>
@@ -122,27 +140,27 @@ public:
     }
 
     template<typename K>
-    void pre_sort(cub_double_vector<T> &keys)
+    void pre_sort(cub_double_vector<K> &keys)
     {
-        cub::DeviceRadixSort::Sort(NULL, d_temp_size, keys.ptrs, keys.size());
+        cub::DeviceRadixSort::SortKeys(NULL, d_temp_size, keys.ptrs, keys.size());
         cudaMalloc(&d_temp, d_temp_size);
     }
 
     template<typename K>
-    void sort(cub_double_vector<T> &keys)
+    void sort(cub_double_vector<K> &keys)
     {
-        cub::DeviceRadixSort::Sort(d_temp, d_temp_size, keys.ptrs, keys.size());
+        cub::DeviceRadixSort::SortKeys(d_temp, d_temp_size, keys.ptrs, keys.size());
     }
 
     template<typename K, typename V>
-    void pre_sort_by_key(cub_double_vector<T> &keys, cub_double_vector<T> &values)
+    void pre_sort_by_key(cub_double_vector<K> &keys, cub_double_vector<V> &values)
     {
         cub::DeviceRadixSort::SortPairs(NULL, d_temp_size, keys.ptrs, values.ptrs, keys.size());
         cudaMalloc(&d_temp, d_temp_size);
     }
 
     template<typename K, typename V>
-    void pre_sort_by_key(cub_double_vector<T> &keys, cub_double_vector<T> &values)
+    void sort_by_key(cub_double_vector<K> &keys, cub_double_vector<V> &values)
     {
         cub::DeviceRadixSort::SortPairs(d_temp, d_temp_size, keys.ptrs, values.ptrs, keys.size());
     }
