@@ -8,52 +8,77 @@
 #include "register.h"
 #include "clutils.h"
 
-template<typename T>
-struct vex_traits
+class vex_algorithm
 {
-    typedef vex::vector<T> vector;
+private:
+    vex::Context ctx;
 
-    static std::vector<T> get(const vector &v)
+public:
+    template<typename T>
+    struct types
     {
-        std::vector<T> ans(v.size());
-        vex::copy(v, ans);
-        return ans;
+        typedef vex::vector<T> vector;
+        typedef vex::vector<T> scan_vector;
+        typedef vex::vector<T> sort_vector;
+    };
+
+    template<typename T>
+    void create(vex::vector<T> &out, std::size_t elements)
+    {
+        out = vex::vector<T>(ctx, elements); // uses move assignment
     }
 
-    template<typename K>
-    static void sort(vex::vector<K> &keys, vector &values)
+    template<typename T>
+    static void copy(const std::vector<T> &src, vex::vector<T> &dst)
+    {
+        vex::copy(src, dst);
+    }
+
+    template<typename T>
+    static void copy(const vex::vector<T> &src, vex::vector<T> &dst)
+    {
+        dst = src;
+    }
+
+    template<typename T>
+    static void copy(const vex::vector<T> &src, std::vector<T> &dst)
+    {
+        vex::copy(src, dst);
+    }
+
+    template<typename T>
+    static void pre_scan(const vex::vector<T> &src, vex::vector<T> &dst) {}
+
+    template<typename T>
+    static void scan(const vex::vector<T> &src, vex::vector<T> &dst)
+    {
+        vex::exclusive_scan(src, dst);
+    }
+
+    template<typename K, typename V>
+    static void pre_sort_by_key(vex::vector<K> &keys, vex::vector<V> &values) {}
+
+    template<typename K, typename V>
+    static void sort_by_key(vex::vector<K> &keys, vex::vector<V> &values)
     {
         vex::sort_by_key(keys, values);
     }
-};
 
-template<>
-struct vex_traits<void>
-{
-    struct vector
-    {
-        vector() {}
-        vector(const vex::Context &ctx, const void_vector &) {}
-        vector(const vex::Context &ctx, std::size_t size) {}
-        std::size_t size() const { return 0; }
-    };
+    template<typename T>
+    static void pre_sort(vex::vector<T> &keys) {}
 
-    static void_vector get(const vector &v)
-    {
-        return void_vector();
-    }
-
-    template<typename K>
-    static void sort(vex::vector<K> &keys, vector &values)
+    template<typename T>
+    static void sort(vex::vector<T> &keys)
     {
         vex::sort(keys);
     }
-};
 
-class vex_algorithm
-{
-protected:
-    vex::Context ctx;
+    void finish()
+    {
+        ctx.finish();
+    }
+
+    static std::string api() { return "vex"; }
 
     explicit vex_algorithm(device_type d) : ctx(vex::Filter::Type(type_to_cl_type(d)) && vex::Filter::Position(0))
     {
@@ -62,81 +87,4 @@ protected:
     }
 };
 
-/************************************************************************/
-
-template<typename T>
-class vex_scan : public scan_algorithm<T>, public vex_algorithm
-{
-protected:
-    vex::vector<T> d_a, d_scan;
-
-public:
-    vex_scan(device_type d, const std::vector<T> &h_a)
-        : scan_algorithm<T>(h_a), vex_algorithm(d), d_a(ctx, h_a), d_scan(ctx, h_a.size())
-    {
-    }
-
-    static std::string name() { return "vex::exclusive_scan"; }
-    static std::string api() { return "vex"; }
-    virtual void finish() override { ctx.finish(); }
-
-    virtual void run() override
-    {
-        vex::exclusive_scan(d_a, d_scan);
-    }
-
-    virtual std::vector<T> get() const override
-    {
-        std::vector<T> ans(d_scan.size());
-        vex::copy(d_scan, ans);
-        return ans;
-    }
-};
-
-
-static register_scan_algorithm<vex_scan> register_vex_scan;
-
-/************************************************************************/
-
-template<typename K, typename V>
-class vex_sort : public sort_algorithm<K, V>, public vex_algorithm
-{
-protected:
-    typedef typename vector_of<K>::type key_vector;
-    typedef typename vector_of<V>::type value_vector;
-    typedef typename vex_traits<K>::vector d_key_vector;
-    typedef typename vex_traits<V>::vector d_value_vector;
-
-    d_key_vector d_keys, d_sorted_keys;
-    d_value_vector d_values, d_sorted_values;
-
-public:
-    vex_sort(device_type d, const key_vector &h_keys, const value_vector &h_values)
-        : sort_algorithm<K, V>(h_keys, h_values), vex_algorithm(d),
-        d_keys(ctx, h_keys),
-        d_sorted_keys(ctx, h_keys.size()),
-        d_values(ctx, h_values),
-        d_sorted_values(ctx, h_values.size())
-    {
-    }
-
-    static std::string name() { return "vex::sort"; }
-    static std::string api() { return "vex"; }
-    virtual void finish() override { ctx.finish(); }
-
-    virtual void run() override
-    {
-        d_sorted_keys = d_keys;
-        d_sorted_values = d_values;
-        vex_traits<V>::template sort<K>(d_sorted_keys, d_sorted_values);
-    }
-
-    virtual std::pair<key_vector, value_vector> get() const override
-    {
-        return std::make_pair(
-            vex_traits<K>::get(d_sorted_keys),
-            vex_traits<V>::get(d_sorted_values));
-    }
-};
-
-static register_sort_algorithm<vex_sort> register_vex_sort;
+static register_algorithms<vex_algorithm> register_vex;

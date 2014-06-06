@@ -28,34 +28,6 @@ class device_not_supported
 {
 };
 
-struct void_vector
-{
-    void_vector() {}
-    explicit void_vector(std::size_t size) {}
-
-    int operator[](std::size_t idx) const
-    {
-        return 0;
-    }
-
-    std::size_t size() const
-    {
-        return 0;
-    }
-};
-
-template<typename T>
-struct vector_of
-{
-    typedef std::vector<T> type;
-};
-
-template<>
-struct vector_of<void>
-{
-    typedef void_vector type;
-};
-
 class algorithm
 {
 public:
@@ -76,26 +48,41 @@ static inline bool check_equal(std::size_t idx, const t &a, const t &b)
     return true;
 }
 
-template<typename T>
+template<typename T, typename A>
 class scan_algorithm : public algorithm
 {
 private:
     std::vector<T> expected;
+    A impl;
+    typename A::template types<T>::vector d_a;
+    typename A::template types<T>::scan_vector d_scan;
 
-    virtual std::vector<T> get() const = 0;
 public:
     typedef T value_type;
 
-    scan_algorithm(const std::vector<T> &in)
-        : expected(in.size())
+    scan_algorithm(device_type d, const std::vector<T> &in)
+        : expected(in.size()), impl(d)
     {
+        impl.create(d_a, in.size());
+        impl.create(d_scan, in.size());
+        impl.copy(in, d_a);
+        impl.pre_scan(d_a, d_scan);
+
         std::partial_sum(in.begin(), in.end() - 1, expected.begin() + 1);
         expected[0] = T();
     }
 
+    virtual void run()
+    {
+        impl.scan(d_a, d_scan);
+    }
+
+    virtual void finish() { impl.finish(); }
+
     virtual void validate() const
     {
-        std::vector<T> out = get();
+        std::vector<T> out(expected.size());
+        impl.copy(d_scan, out);
         assert(out.size() == expected.size());
         for (std::size_t i = 0; i < expected.size(); i++)
             if (!check_equal(i, expected[i], out[i]))
@@ -103,34 +90,57 @@ public:
     }
 };
 
-template<typename K, typename V>
-class sort_algorithm : public algorithm
+template<typename K, typename V, typename A>
+class sort_by_key_algorithm : public algorithm
 {
 public:
     typedef K key_type;
     typedef V value_type;
-    typedef typename vector_of<K>::type key_vector;
-    typedef typename vector_of<V>::type value_vector;
 
 private:
-    key_vector expected_keys;
-    value_vector expected_values;
-    virtual std::pair<key_vector, value_vector> get() const = 0;
+    std::vector<K> expected_keys;
+    std::vector<V> expected_values;
+    A impl;
+    typename A::template types<K>::vector d_keys;
+    typename A::template types<V>::vector d_values;
+    typename A::template types<K>::sort_vector d_sorted_keys;
+    typename A::template types<V>::sort_vector d_sorted_values;
 
 public:
-    sort_algorithm(const key_vector &keys, const value_vector &values)
-        : expected_keys(keys), expected_values(values)
+    sort_by_key_algorithm(device_type d, const std::vector<K> &keys, const std::vector<V> &values)
+        : expected_keys(keys), expected_values(values), impl(d)
     {
+        assert(keys.size() == values.size());
+        std::size_t N = keys.size();
+        impl.create(d_keys, N);
+        impl.create(d_values, N);
+        impl.create(d_sorted_keys, N);
+        impl.create(d_sorted_values, N);
+        impl.copy(keys, d_keys);
+        impl.copy(values, d_values);
+        impl.pre_sort_by_key(d_sorted_keys, d_sorted_values);
+
         sort_by_key(expected_keys, expected_values);
     }
 
+    virtual void run()
+    {
+        impl.copy(d_keys, d_sorted_keys);
+        impl.copy(d_values, d_sorted_values);
+        impl.sort_by_key(d_sorted_keys, d_sorted_values);
+    }
+
+    virtual void finish() { impl.finish(); }
+
     virtual void validate() const
     {
-        std::pair<key_vector, value_vector> out = get();
-        const key_vector &keys = out.first;
-        const value_vector &values = out.second;
+        std::vector<K> keys(expected_keys.size());
+        std::vector<V> values(expected_values.size());
+        impl.copy(d_sorted_keys, keys);
+        impl.copy(d_sorted_values, values);
         assert(keys.size() == expected_keys.size());
         assert(values.size() == expected_values.size());
+
         for (std::size_t i = 0; i < expected_keys.size(); i++)
         {
             if (!check_equal(i, expected_keys[i], keys[i]))
@@ -144,10 +154,51 @@ public:
     }
 };
 
-/* See register for the definition. It is declared here so that
- * it can be specialised by CUDA code that cannot include C++11 code.
- */
-template<typename A>
-struct algorithm_factory;
+template<typename K, typename A>
+class sort_algorithm : public algorithm
+{
+public:
+    typedef K key_type;
+
+private:
+    std::vector<K> expected_keys;
+    A impl;
+    typename A::template types<K>::vector d_keys;
+    typename A::template types<K>::sort_vector d_sorted_keys;
+
+public:
+    sort_algorithm(device_type d, const std::vector<K> &keys)
+        : expected_keys(keys), impl(d)
+    {
+        std::size_t N = keys.size();
+        impl.create(d_keys, N);
+        impl.create(d_sorted_keys, N);
+        impl.copy(keys, d_keys);
+        impl.pre_sort(d_sorted_keys);
+
+        std::sort(expected_keys.begin(), expected_keys.end());
+    }
+
+    virtual void run()
+    {
+        impl.copy(d_keys, d_sorted_keys);
+        impl.sort(d_sorted_keys);
+    }
+
+    virtual void finish() { impl.finish(); }
+
+    virtual void validate() const
+    {
+        std::vector<K> keys(expected_keys.size());
+        impl.copy(d_sorted_keys, keys);
+        assert(keys.size() == expected_keys.size());
+
+        for (std::size_t i = 0; i < expected_keys.size(); i++)
+        {
+            if (!check_equal(i, expected_keys[i], keys[i]))
+                break;
+        }
+    }
+};
 
 #endif

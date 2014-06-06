@@ -125,11 +125,11 @@ def build(ctx):
         use += ['BOLT']
 
     if ctx.env.have_thrust:
-        sources += ['thrust.cu', 'thrust_register.cpp']
+        sources += ['thrust.cu']
         use += ['THRUST']
         need_cuda = True
     if ctx.env.have_cub:
-        sources += ['cub.cu', 'cub_register.cpp']
+        sources += ['cub.cu']
         use += ['CUB']
         need_cuda = True
     if ctx.env.have_mgpu:

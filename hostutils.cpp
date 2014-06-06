@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <vector>
 #include <boost/iterator/iterator_facade.hpp>
+#include <boost/cstdint.hpp>
 #include "hostutils.h"
 
 template<typename I1, typename I2>
@@ -73,8 +74,6 @@ public:
     }
 };
 
-class void_vector;
-
 template<typename I1, typename I2, typename Cmp = std::less<typename std::iterator_traits<I1>::value_type> >
 static void sort_by_key(I1 key_first, I1 key_last, I2 value_first, Cmp cmp = Cmp())
 {
@@ -90,12 +89,6 @@ template<typename K, typename V>
 void sort_by_key(K &keys, V &values)
 {
     sort_by_key(keys.begin(), keys.end(), values.begin());
-}
-
-template<typename K>
-void sort_by_key(K &keys, void_vector &values)
-{
-    std::sort(keys.begin(), keys.end());
 }
 
 #include <parallel/algorithm>
@@ -117,15 +110,5 @@ void parallel_sort_by_key(K &keys, V &values)
     parallel_sort_by_key(keys.begin(), keys.end(), values.begin());
 }
 
-template<typename K>
-void parallel_sort_by_key(K &keys, void_vector &values)
-{
-    __gnu_parallel::sort(keys.begin(), keys.end());
-}
-
-
-template void sort_by_key<std::vector<std::uint32_t>, std::vector<std::uint32_t> >(std::vector<std::uint32_t> &, std::vector<std::uint32_t> &);
-template void sort_by_key<std::vector<std::uint32_t> >(std::vector<std::uint32_t> &, void_vector &);
-
-template void parallel_sort_by_key<std::vector<std::uint32_t>, std::vector<std::uint32_t> >(std::vector<std::uint32_t> &, std::vector<std::uint32_t> &);
-template void parallel_sort_by_key<std::vector<std::uint32_t> >(std::vector<std::uint32_t> &, void_vector &);
+template void sort_by_key<std::vector<boost::uint32_t>, std::vector<boost::uint32_t> >(std::vector<boost::uint32_t> &, std::vector<boost::uint32_t> &);
+template void parallel_sort_by_key<std::vector<boost::uint32_t>, std::vector<boost::uint32_t> >(std::vector<boost::uint32_t> &, std::vector<boost::uint32_t> &);
