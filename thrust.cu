@@ -8,10 +8,11 @@
 
 class thrust_algorithm
 {
+public:
     template<typename T>
     struct types
     {
-        typename thrust::device_vector<T> vector;
+        typedef thrust::device_vector<T> vector;
         typedef vector scan_vector;
         typedef vector sort_vector;
     };
@@ -35,7 +36,7 @@ class thrust_algorithm
     }
 
     template<typename T>
-    static void copy(const thrust::device_vector<T> &src, src::vector<T> &dst)
+    static void copy(const thrust::device_vector<T> &src, std::vector<T> &dst)
     {
         thrust::copy(src.begin(), src.end(), dst.begin());
     }
@@ -69,6 +70,14 @@ class thrust_algorithm
         thrust::sort(keys.begin(), keys.end());
     }
 
+
+    static void finish()
+    {
+        cudaDeviceSynchronize();
+    }
+
+    static std::string api() { return "thrust"; }
+
     explicit thrust_algorithm(device_type d)
     {
         if (d != DEVICE_TYPE_GPU)
@@ -83,7 +92,7 @@ algorithm *algorithm_factory<scan_algorithm<T, thrust_algorithm> >::create(
     device_type d,
     const std::vector<T> &h_a)
 {
-    return new scan_algorithm<K, thrust_algorithm>(d, h_a);
+    return new scan_algorithm<T, thrust_algorithm>(d, h_a);
 }
 
 template<typename K>
@@ -102,3 +111,7 @@ algorithm *algorithm_factory<sort_by_key_algorithm<K, V, thrust_algorithm> >::cr
 {
     return new sort_by_key_algorithm<K, V, thrust_algorithm>(d, h_keys, h_values);
 }
+
+template class algorithm_factory<scan_algorithm<int, thrust_algorithm> >;
+template class algorithm_factory<sort_algorithm<unsigned int, thrust_algorithm> >;
+template class algorithm_factory<sort_by_key_algorithm<unsigned int, unsigned int, thrust_algorithm> >;
