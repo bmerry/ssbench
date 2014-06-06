@@ -4,7 +4,7 @@
 #include <cstddef>
 #include <boost/utility.hpp>
 #include "algorithms.h"
-#include "cub.h"
+#include "register.h"
 
 template<typename T>
 class cuda_vector : public boost::noncopyable
