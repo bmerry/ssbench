@@ -1,70 +1,117 @@
+/* Note: this file must not use C++11 features, because CUDA does not support it.
+ */
+
 #ifndef SCANBENCH_REGISTER_H
 #define SCANBENCH_REGISTER_H
 
 #include <memory>
 #include <functional>
 #include <utility>
+#include <boost/ptr_container/ptr_vector.hpp>
 #include "algorithms.h"
 
-/* Creates a new instance of class A. Note that CUDA-based APIs provide
- * specialisations because CUDA does not support C++11.
- */
-template<typename A>
-struct algorithm_factory
+class entry_base
 {
-    // Throws
-    template<typename... Args>
-    static A *create(device_type d, Args&&... args)
-    {
-        return new A(d, std::forward<Args>(args)...);
-    }
-
-    static std::string api()  { return A::api(); }
+public:
+    virtual ~entry_base() {}
+    virtual std::string api() const = 0;
 };
 
-template<typename Tag, typename... Args>
+template<typename T>
+struct scan_entry
+{
+    class base_type : public entry_base
+    {
+    public:
+        virtual algorithm *create(device_type d, const std::vector<T> &values) const = 0;
+    };
+
+    template<typename A>
+    class type : public base_type
+    {
+    public:
+        virtual algorithm *create(device_type d, const std::vector<T> &values) const
+        {
+            return new scan_algorithm<T, A>(d, values);
+        }
+
+        virtual std::string api() const
+        {
+            return A::api();
+        }
+    };
+};
+
+template<typename K>
+struct sort_entry
+{
+    class base_type : public entry_base
+    {
+    public:
+        virtual algorithm *create(device_type d, const std::vector<K> &keys) const = 0;
+    };
+
+    template<typename A>
+    class type : public base_type
+    {
+    public:
+        virtual algorithm *create(device_type d, const std::vector<K> &keys) const
+        {
+            return new sort_algorithm<K, A>(d, keys);
+        }
+
+        virtual std::string api() const
+        {
+            return A::api();
+        }
+    };
+};
+
+template<typename K, typename V>
+struct sort_by_key_entry
+{
+
+    class base_type : public entry_base
+    {
+    public:
+        virtual algorithm *create(device_type d, const std::vector<K> &keys, const std::vector<V> &values) const = 0;
+    };
+
+    template<typename A>
+    class type : public base_type
+    {
+    public:
+        virtual algorithm *create(device_type d, const std::vector<K> &keys, const std::vector<V> &values) const
+        {
+            return new sort_by_key_algorithm<K, V, A>(d, keys, values);
+        }
+
+        virtual std::string api() const
+        {
+            return A::api();
+        }
+    };
+};
+
+template<typename Entry>
 class registry
 {
 public:
-    struct entry
-    {
-        std::function<std::unique_ptr<algorithm>(device_type, Args...)> factory;
-        std::string api;
-    };
-
     template<typename S>
     static void add_class()
     {
-        entry e;
-        e.factory = [](device_type d, Args... in) -> std::unique_ptr<algorithm>
-        {
-            return std::unique_ptr<algorithm>(algorithm_factory<S>::create(d, in...));
-        };
-        e.api = algorithm_factory<S>::api();
-        entries.push_back(std::move(e));
+        typedef typename Entry::template type<S> T;
+        entries.push_back(new T);
     }
 
-    static const std::vector<entry> &get() { return entries; }
+    static const boost::ptr_vector<typename Entry::base_type> &get() { return entries; }
 
 private:
-    static std::vector<entry> entries;
+    static boost::ptr_vector<typename Entry::base_type> entries;
 };
 
-template<typename Tag, typename... Args>
-std::vector<typename registry<Tag, Args...>::entry> registry<Tag, Args...>::entries;
-
-struct scan_tag {};
-struct sort_tag {};
-struct sort_by_key_tag {};
-
-template<typename T>
-using scan_registry = registry<scan_tag, const std::vector<T> &>;
-template<typename K>
-using sort_registry = registry<sort_tag, const std::vector<K> &>;
-template<typename K, typename V>
-using sort_by_key_registry = registry<sort_by_key_tag,
-      const std::vector<K> &,
-      const std::vector<V> &>;
+template<typename Entry>
+boost::ptr_vector<typename Entry::base_type> registry<Entry>::entries;
 
 template<typename A>
 class register_scan_algorithm
@@ -72,7 +119,7 @@ class register_scan_algorithm
 public:
     register_scan_algorithm()
     {
-        scan_registry<std::int32_t>::add_class<scan_algorithm<std::int32_t, A> >();
+        registry<scan_entry<std::int32_t> >::add_class<A>();
     }
 };
 
@@ -82,7 +129,7 @@ class register_sort_algorithm
 public:
     register_sort_algorithm()
     {
-        sort_registry<std::uint32_t>::add_class<sort_algorithm<std::uint32_t, A> >();
+        registry<sort_entry<std::uint32_t> >::add_class<A>();
     }
 };
 
@@ -92,8 +139,7 @@ class register_sort_by_key_algorithm
 public:
     register_sort_by_key_algorithm()
     {
-        sort_by_key_registry<std::uint32_t, std::uint32_t>::add_class<
-            sort_by_key_algorithm<std::uint32_t, std::uint32_t, A> >();
+        registry<sort_by_key_entry<std::uint32_t, std::uint32_t> >::add_class<A>();
     }
 };
 

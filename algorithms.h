@@ -78,7 +78,6 @@ public:
     }
 
     virtual void finish() { impl.finish(); }
-    static std::string api() { return A::api(); }
 
     virtual void validate() const
     {
@@ -132,7 +131,6 @@ public:
     }
 
     virtual void finish() { impl.finish(); }
-    static std::string api() { return A::api(); }
 
     virtual void validate() const
     {
@@ -188,7 +186,6 @@ public:
     }
 
     virtual void finish() { impl.finish(); }
-    static std::string api() { return A::api(); }
 
     virtual void validate() const
     {
@@ -203,11 +200,5 @@ public:
         }
     }
 };
-
-/* See register for the definition. It is declared here so that
- * it can be specialised by CUDA code that cannot include C++11 code.
- */
-template<typename A>
-struct algorithm_factory;
 
 #endif

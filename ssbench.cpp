@@ -98,12 +98,12 @@ static void time_entry(
     const T &entry, const std::string &algname, const properties &props,
     FactoryArgs &&... args)
 {
-    if (enabled_api(entry.api))
+    if (enabled_api(entry.api()))
     {
         try
         {
-            auto ptr = entry.factory(std::forward<FactoryArgs>(args)...);
-            time_algorithm(*ptr, algname, entry.api, props);
+            std::unique_ptr<algorithm> ptr(entry.create(std::forward<FactoryArgs>(args)...));
+            time_algorithm(*ptr, algname, entry.api(), props);
         }
         catch (device_not_supported)
         {
@@ -180,7 +180,7 @@ int main(int argc, char **argv)
             a[i] = i;
 
         output_header("Scan");
-        for (const auto &entry : scan_registry<std::int32_t>::get())
+        for (const auto &entry : registry<scan_entry<std::int32_t> >::get())
             time_entry(entry, "scan", props, d, a);
         output_footer();
     }
@@ -198,7 +198,7 @@ int main(int argc, char **argv)
         if (enabled_algorithm("sort"))
         {
             output_header("Sort");
-            for (const auto &entry : sort_registry<std::uint32_t>::get())
+            for (const auto &entry : registry<sort_entry<std::uint32_t> >::get())
                 time_entry(entry, "sort", props, d, keys);
             output_footer();
         }
@@ -206,7 +206,7 @@ int main(int argc, char **argv)
         if (enabled_algorithm("sort-by-key"))
         {
             output_header("Sort by key");
-            for (const auto &entry : sort_by_key_registry<std::uint32_t, std::uint32_t>::get())
+            for (const auto &entry : registry<sort_by_key_entry<std::uint32_t, std::uint32_t> >::get())
                 time_entry(entry, "sort-by-key", props, d, keys, values);
             output_footer();
         }
