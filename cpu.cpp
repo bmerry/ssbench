@@ -9,59 +9,110 @@
 #include "register.h"
 #include "hostutils.h"
 
-template<typename T>
-class cpu_scan : public scan_algorithm<T>
+class cpu_algorithm
 {
-protected:
-    std::vector<T> a;
-    std::vector<T> out;
 public:
-    cpu_scan(device_type d, const std::vector<T> &h_a)
-        : scan_algorithm<T>(h_a), a(h_a), out(h_a.size())
+    template<typename T>
+    struct types
+    {
+        typedef std::vector<T> vector;
+        typedef std::vector<T> scan_vector;
+        typedef std::vector<T> sort_vector;
+    };
+
+    template<typename T>
+    static void create(std::vector<T> &out, std::size_t elements)
+    {
+        out.resize(elements);
+    }
+
+    template<typename T>
+    static void copy(const std::vector<T> &src, std::vector<T> &dst)
+    {
+        dst = src;
+    }
+
+    template<typename T>
+    static void pre_scan(std::vector<T> &src, std::vector<T> &dst) {}
+
+    template<typename K, typename V>
+    static void pre_sort_by_key(std::vector<K> &keys, std::vector<V> &values) {}
+
+    template<typename T>
+    static void pre_sort(std::vector<T> &keys) {}
+
+    static void finish() {}
+
+    explicit cpu_algorithm(device_type d)
     {
         if (d != DEVICE_TYPE_CPU)
             throw device_not_supported();
     }
-    static std::string api() { return "cpu"; }
-    virtual void finish() override {}
-    virtual std::vector<T> get() const override { return out; }
 };
 
-template<typename T>
-class serial_scan : public cpu_scan<T>
+class serial_algorithm : public cpu_algorithm
 {
 public:
-    using cpu_scan<T>::cpu_scan;
-    static std::string name() { return "serial scan"; }
-    virtual void run() override
+    using cpu_algorithm::cpu_algorithm;
+
+    static std::string api() { return "serial"; }
+
+    template<typename T>
+    static void scan(const std::vector<T> &src, std::vector<T> &dst)
     {
-        std::partial_sum(this->a.begin(), this->a.end() - 1, this->out.begin() + 1);
-        this->out[0] = T();
+        std::partial_sum(src.begin(), src.end() - 1, dst.begin() + 1);
+        dst[0] = T();
+    }
+
+    template<typename K>
+    static void sort(std::vector<K> &keys)
+    {
+        std::sort(keys.begin(), keys.end());
+    }
+
+    template<typename K, typename V>
+    static void sort_by_key(std::vector<K> &keys, std::vector<V> &values)
+    {
+        ::sort_by_key(keys, values);
     }
 };
 
-template<typename T>
-class parallel_scan : public cpu_scan<T>
+class parallel_algorithm : public cpu_algorithm
 {
 public:
-    using cpu_scan<T>::cpu_scan;
+    using cpu_algorithm::cpu_algorithm;
 
-    static std::string name() { return "parallel scan"; }
-    virtual void run() override
+    static std::string api() { return "parallel"; }
+
+    template<typename T>
+    static void scan(const std::vector<T> &src, std::vector<T> &dst)
     {
-        __gnu_parallel::partial_sum(this->a.begin(), this->a.end() - 1, this->out.begin() + 1);
-        this->out[0] = T();
+        __gnu_parallel::partial_sum(src.begin(), src.end() - 1, dst.begin() + 1);
+        dst[0] = T();
+    }
+
+    template<typename K>
+    static void sort(std::vector<K> &keys)
+    {
+        __gnu_parallel::sort(keys.begin(), keys.end());
+    }
+
+    template<typename K, typename V>
+    static void sort_by_key(std::vector<K> &keys, std::vector<V> &values)
+    {
+        ::parallel_sort_by_key(keys, values);
     }
 };
 
-template<typename T>
-class my_parallel_scan : public cpu_scan<T>
+class my_parallel_algorithm : public parallel_algorithm
 {
 public:
-    using cpu_scan<T>::cpu_scan;
+    using parallel_algorithm::parallel_algorithm;
 
-    static std::string name() { return "my parallel scan"; }
-    virtual void run() override
+    static std::string api() { return "my_parallel"; }
+
+    template<typename T>
+    static void scan(const std::vector<T> &src, std::vector<T> &dst)
     {
         std::size_t threads;
 #pragma omp parallel
@@ -78,10 +129,10 @@ public:
 #pragma omp parallel
         {
             std::size_t tid = omp_get_thread_num();
-            auto in_begin = this->a.cbegin();
-            for (std::size_t start = 0; start < this->a.size(); start += chunk)
+            auto in_begin = src.cbegin();
+            for (std::size_t start = 0; start < src.size(); start += chunk)
             {
-                std::size_t len = std::min(this->a.size() - start, chunk);
+                std::size_t len = std::min(src.size() - start, chunk);
                 std::size_t pofs = (start + tid * len / threads);
                 std::size_t qofs = (start + (tid + 1) * len / threads);
                 reduced[tid] = accumulate(in_begin + pofs, in_begin + qofs, T());
@@ -102,78 +153,14 @@ public:
                 for (std::size_t i = pofs; i != qofs; ++i)
                 {
                     T tmp = sum;
-                    sum += this->a[i];
-                    this->out[i] = tmp;
+                    sum += src[i];
+                    dst[i] = tmp;
                 }
             }
         }
     }
 };
 
-static register_scan_algorithm<serial_scan> register_serial_scan;
-static register_scan_algorithm<parallel_scan> register_parallel_scan;
-static register_scan_algorithm<my_parallel_scan> register_my_parallel_scan;
-
-/************************************************************************/
-
-template<typename K, typename V>
-class cpu_sort : public sort_algorithm<K, V>
-{
-protected:
-    typedef typename vector_of<K>::type key_vector;
-    typedef typename vector_of<V>::type value_vector;
-    key_vector keys, sorted_keys;
-    value_vector values, sorted_values;
-
-public:
-    cpu_sort(device_type d, const key_vector &h_keys, const value_vector &h_values)
-        : sort_algorithm<K, V>(h_keys, h_values),
-        keys(h_keys),
-        sorted_keys(h_keys.size()),
-        values(h_values),
-        sorted_values(h_values.size())
-    {
-        if (d != DEVICE_TYPE_CPU)
-            throw device_not_supported();
-    }
-    static std::string api() { return "cpu"; }
-    virtual void finish() override {}
-    virtual std::pair<key_vector, value_vector> get() const override
-    {
-        return std::make_pair(sorted_keys, sorted_values);
-    }
-};
-
-template<typename K, typename V>
-class serial_sort : public cpu_sort<K, V>
-{
-public:
-    using cpu_sort<K, V>::cpu_sort;
-
-    static std::string name() { return "serial sort"; }
-    virtual void run() override
-    {
-        this->sorted_keys = this->keys;
-        this->sorted_values = this->values;
-        sort_by_key(this->sorted_keys, this->sorted_values);
-    }
-};
-
-template<typename K, typename V>
-class parallel_sort : public cpu_sort<K, V>
-{
-public:
-    using cpu_sort<K, V>::cpu_sort;
-
-    static std::string name() { return "parallel sort"; }
-    virtual void run() override
-    {
-        this->sorted_keys = this->keys;
-        this->sorted_values = this->values;
-
-        parallel_sort_by_key(this->sorted_keys, this->sorted_values);
-    }
-};
-
-static register_sort_algorithm<serial_sort> register_serial_sort;
-static register_sort_algorithm<parallel_sort> register_parallel_sort;
+static register_algorithms<serial_algorithm> register_serial;
+static register_algorithms<parallel_algorithm> register_parallel;
+static register_scan_algorithm<my_parallel_algorithm> register_my_parallel_scan;

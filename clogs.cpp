@@ -24,63 +24,106 @@ struct clogs_type<cl_uint>
     static clogs::Type type() { return clogs::TYPE_UINT; }
 };
 
-template<>
-struct clogs_type<void>
-{
-    static clogs::Type type() { return clogs::Type(); }
-};
-
 template<typename T>
-struct clogs_traits
+struct clogs_vector : public cl::Buffer
 {
-    // Creates a buffer with a copy of data, or with uninitialized contents if flags does
-    // not contain CL_MEM_COPY_HOST_PTR
-    static cl::Buffer make_buffer(const cl::Context &ctx, cl_mem_flags flags, const std::vector<T> &data)
-    {
-        return cl::Buffer(ctx, flags, data.size() * sizeof(T),
-                          (flags & CL_MEM_COPY_HOST_PTR) ? const_cast<T *>(data.data()) : nullptr);
-    }
-
-    static void copy_buffer(const cl::CommandQueue &queue, const cl::Buffer &src, const cl::Buffer &trg)
-    {
-        queue.enqueueCopyBuffer(src, trg, 0, 0, src.getInfo<CL_MEM_SIZE>());
-    }
-
-    static std::vector<T> get_buffer(const cl::CommandQueue &queue, const cl::Buffer &buffer)
-    {
-        std::size_t elements = buffer.getInfo<CL_MEM_SIZE>() / sizeof(T);
-        std::vector<T> ans(elements);
-        queue.enqueueReadBuffer(buffer, CL_TRUE, 0, elements * sizeof(T), ans.data());
-        return ans;
-    }
+    using cl::Buffer::Buffer;
+    std::size_t size() const { return getInfo<CL_MEM_SIZE>() / sizeof(T); }
 };
-
-template<>
-struct clogs_traits<void>
-{
-    static cl::Buffer make_buffer(const cl::Context &, cl_mem_flags, const void_vector &)
-    {
-        return cl::Buffer();
-    }
-
-    static void copy_buffer(const cl::CommandQueue &, const cl::Buffer &, const cl::Buffer &)
-    {
-    }
-
-    static void_vector get_buffer(const cl::CommandQueue &, const cl::Buffer &)
-    {
-        return void_vector();
-    }
-};
-
-/************************************************************************/
 
 class clogs_algorithm
 {
-protected:
+private:
     cl::Device device;
     cl::Context ctx;
     cl::CommandQueue queue;
+
+    std::unique_ptr<clogs::Scan> scanner;
+    std::unique_ptr<clogs::Radixsort> sorter;
+
+public:
+    template<typename T>
+    struct types
+    {
+        typedef clogs_vector<T> vector;
+        typedef clogs_vector<T> scan_vector;
+        typedef clogs_vector<T> sort_vector;
+    };
+
+    template<typename T>
+    void create(clogs_vector<T> &out, std::size_t elements)
+    {
+        out = clogs_vector<T>(ctx, CL_MEM_READ_WRITE, elements * sizeof(T));
+    }
+
+    template<typename T>
+    void copy(const std::vector<T> &src, clogs_vector<T> &dst) const
+    {
+        queue.enqueueWriteBuffer(dst, CL_TRUE, 0, src.size() * sizeof(T), src.data());
+    }
+
+    template<typename T>
+    void copy(const clogs_vector<T> &src, clogs_vector<T> &dst) const
+    {
+        queue.enqueueCopyBuffer(src, dst, 0, 0, src.template getInfo<CL_MEM_SIZE>());
+    }
+
+    template<typename T>
+    void copy(const clogs_vector<T> &src, std::vector<T> &dst) const
+    {
+        queue.enqueueReadBuffer(src, CL_TRUE, 0, dst.size() * sizeof(T), dst.data());
+    }
+
+    template<typename T>
+    void pre_scan(const clogs_vector<T> &src, clogs_vector<T> &dst)
+    {
+        scanner.reset(new clogs::Scan(ctx, device, clogs_type<T>::type()));
+    }
+
+    template<typename T>
+    void scan(const clogs_vector<T> &src, clogs_vector<T> &dst) const
+    {
+        scanner->enqueue(queue, src, dst, src.size());
+    }
+
+    template<typename K, typename V>
+    void pre_sort_by_key(clogs_vector<K> &keys, clogs_vector<V> &values)
+    {
+        sorter.reset(new clogs::Radixsort(ctx, device, clogs_type<K>::type(), clogs_type<V>::type()));
+        clogs_vector<K> temp_keys;
+        clogs_vector<V> temp_values;
+        create(temp_keys, keys.size());
+        create(temp_values, values.size());
+        sorter->setTemporaryBuffers(temp_keys, temp_values);
+    }
+
+    template<typename K, typename V>
+    void sort_by_key(clogs_vector<K> &keys, clogs_vector<V> &values) const
+    {
+        sorter->enqueue(queue, keys, values, keys.size());
+    }
+
+    template<typename K>
+    void pre_sort(clogs_vector<K> &keys)
+    {
+        sorter.reset(new clogs::Radixsort(ctx, device, clogs_type<K>::type()));
+        clogs_vector<K> temp_keys;
+        create(temp_keys, keys.size());
+        sorter->setTemporaryBuffers(temp_keys, cl::Buffer());
+    }
+
+    template<typename K>
+    void sort(clogs_vector<K> &keys) const
+    {
+        sorter->enqueue(queue, keys, cl::Buffer(), keys.size());
+    }
+
+    void finish()
+    {
+        queue.finish();
+    }
+
+    static std::string api() { return "clogs"; }
 
     explicit clogs_algorithm(device_type d)
         : device(device_from_type(d)),
@@ -90,94 +133,4 @@ protected:
     }
 };
 
-/************************************************************************/
-
-template<typename T>
-class clogs_scan : public scan_algorithm<T>, public clogs_algorithm
-{
-private:
-    std::size_t elements;
-    cl::Buffer d_a;
-    cl::Buffer d_scan;
-    clogs::Scan scan;
-
-public:
-    clogs_scan(device_type d, const std::vector<T> &h_a)
-        : scan_algorithm<T>(h_a), clogs_algorithm(d),
-        elements(h_a.size()),
-        d_a(ctx, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
-            h_a.size() * sizeof(T),
-            const_cast<T *>(h_a.data())),
-        d_scan(ctx, CL_MEM_READ_WRITE, elements * sizeof(T)),
-        scan(ctx, device, clogs_type<T>::type())
-    {
-    }
-
-    static std::string name() { return "clogs::Scan"; }
-    static std::string api() { return "clogs"; }
-    virtual void finish() override { queue.finish(); }
-
-    virtual void run() override
-    {
-        scan.enqueue(queue, d_a, d_scan, elements);
-    }
-
-    virtual std::vector<T> get() const override
-    {
-        std::vector<T> ans(elements);
-        queue.enqueueReadBuffer(d_scan, CL_TRUE, 0, elements * sizeof(T), ans.data());
-        return ans;
-    }
-};
-
-static register_scan_algorithm<clogs_scan> register_clogs_scan;
-
-/************************************************************************/
-
-template<typename K, typename V>
-class clogs_sort : public sort_algorithm<K, V>, public clogs_algorithm
-{
-private:
-    std::size_t elements;
-    cl::Buffer d_keys, d_values;
-    cl::Buffer d_sorted_keys, d_sorted_values;
-    cl::Buffer d_tmp_keys, d_tmp_values;
-    clogs::Radixsort sort;
-
-    typedef typename vector_of<K>::type key_vector;
-    typedef typename vector_of<V>::type value_vector;
-
-public:
-    clogs_sort(device_type d, const key_vector &h_keys, const value_vector &h_values)
-        : sort_algorithm<K, V>(h_keys, h_values), clogs_algorithm(d),
-        elements(h_keys.size()),
-        d_keys(clogs_traits<K>::make_buffer(ctx, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, h_keys)),
-        d_values(clogs_traits<V>::make_buffer(ctx, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, h_values)),
-        d_sorted_keys(clogs_traits<K>::make_buffer(ctx, CL_MEM_READ_WRITE, h_keys)),
-        d_sorted_values(clogs_traits<V>::make_buffer(ctx, CL_MEM_READ_WRITE, h_values)),
-        d_tmp_keys(clogs_traits<K>::make_buffer(ctx, CL_MEM_READ_WRITE, h_keys)),
-        d_tmp_values(clogs_traits<V>::make_buffer(ctx, CL_MEM_READ_WRITE, h_values)),
-        sort(ctx, device, clogs_type<K>::type(), clogs_type<V>::type())
-    {
-        sort.setTemporaryBuffers(d_tmp_keys, d_tmp_values);
-    }
-
-    static std::string name() { return "clogs::Radixsort"; }
-    static std::string api() { return "clogs"; }
-    virtual void finish() override { queue.finish(); }
-
-    virtual void run() override
-    {
-        clogs_traits<K>::copy_buffer(queue, d_keys, d_sorted_keys);
-        clogs_traits<V>::copy_buffer(queue, d_values, d_sorted_values);
-        sort.enqueue(queue, d_sorted_keys, d_sorted_values, elements);
-    }
-
-    virtual std::pair<key_vector, value_vector> get() const override
-    {
-        return std::make_pair(clogs_traits<K>::get_buffer(queue, d_sorted_keys),
-                              clogs_traits<V>::get_buffer(queue, d_sorted_values));
-    }
-};
-
-static register_sort_algorithm<clogs_sort> register_clogs_sort;
+static register_algorithms<clogs_algorithm> register_clogs;

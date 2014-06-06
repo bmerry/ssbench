@@ -14,23 +14,21 @@ struct algorithm_factory
 {
     // Throws
     template<typename... Args>
-    static A *create(Args&&... args)
+    static A *create(device_type d, Args&&... args)
     {
-        return new A(std::forward<Args>(args)...);
+        return new A(d, std::forward<Args>(args)...);
     }
 
-    static std::string name() { return A::name(); }
     static std::string api()  { return A::api(); }
 };
 
-template<typename A, typename... Args>
+template<typename Tag, typename... Args>
 class registry
 {
 public:
     struct entry
     {
-        std::function<std::unique_ptr<A>(device_type, Args...)> factory;
-        std::string name;
+        std::function<std::unique_ptr<algorithm>(device_type, Args...)> factory;
         std::string api;
     };
 
@@ -38,11 +36,10 @@ public:
     static void add_class()
     {
         entry e;
-        e.factory = [](device_type d, Args... in) -> std::unique_ptr<A>
+        e.factory = [](device_type d, Args... in) -> std::unique_ptr<algorithm>
         {
-            return std::unique_ptr<A>(algorithm_factory<S>::create(d, in...));
+            return std::unique_ptr<algorithm>(algorithm_factory<S>::create(d, in...));
         };
-        e.name = algorithm_factory<S>::name();
         e.api = algorithm_factory<S>::api();
         entries.push_back(std::move(e));
     }
@@ -53,35 +50,60 @@ private:
     static std::vector<entry> entries;
 };
 
-template<typename A, typename... Args>
-std::vector<typename registry<A, Args...>::entry> registry<A, Args...>::entries;
+template<typename Tag, typename... Args>
+std::vector<typename registry<Tag, Args...>::entry> registry<Tag, Args...>::entries;
+
+struct scan_tag {};
+struct sort_tag {};
+struct sort_by_key_tag {};
 
 template<typename T>
-using scan_registry = registry<scan_algorithm<T>, const std::vector<T> &>;
+using scan_registry = registry<scan_tag, const std::vector<T> &>;
+template<typename K>
+using sort_registry = registry<sort_tag, const std::vector<K> &>;
 template<typename K, typename V>
-using sort_registry = registry<sort_algorithm<K, V>,
-      const typename vector_of<K>::type &,
-      const typename vector_of<V>::type &>;
+using sort_by_key_registry = registry<sort_by_key_tag,
+      const std::vector<K> &,
+      const std::vector<V> &>;
 
-template<template<typename T> class A>
+template<typename A>
 class register_scan_algorithm
 {
 public:
     register_scan_algorithm()
     {
-        scan_registry<std::int32_t>::add_class<A<std::int32_t>>();
+        scan_registry<std::int32_t>::add_class<scan_algorithm<std::int32_t, A> >();
     }
 };
 
-template<template<typename K, typename V> class A>
+template<typename A>
 class register_sort_algorithm
 {
 public:
     register_sort_algorithm()
     {
-        sort_registry<std::uint32_t, void>::add_class<A<std::uint32_t, void>>();
-        sort_registry<std::uint32_t, std::uint32_t>::add_class<A<std::uint32_t, std::uint32_t>>();
+        sort_registry<std::uint32_t>::add_class<sort_algorithm<std::uint32_t, A> >();
     }
+};
+
+template<typename A>
+class register_sort_by_key_algorithm
+{
+public:
+    register_sort_by_key_algorithm()
+    {
+        sort_by_key_registry<std::uint32_t, std::uint32_t>::add_class<
+            sort_by_key_algorithm<std::uint32_t, std::uint32_t, A> >();
+    }
+};
+
+template<typename A>
+class register_algorithms
+{
+private:
+    register_scan_algorithm<A> scan;
+    register_sort_algorithm<A> sort;
+    register_sort_by_key_algorithm<A> sort_by_key;
 };
 
 #endif

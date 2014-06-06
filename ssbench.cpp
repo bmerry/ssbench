@@ -35,7 +35,7 @@ static void output_header(const std::string &name)
 }
 
 static void output_result(
-    const std::string &algname, const std::string &api, const std::string &name,
+    const std::string &algname, const std::string &api,
     double time, const properties &props)
 {
     double rate = 1e-6 * props.N * props.iterations / time;
@@ -49,7 +49,7 @@ static void output_result(
         std::cout << std::setw(20) << std::fixed << std::setprecision(1);
         std::cout << rate << " M/s\t";
         std::cout << std::setw(0) << std::setprecision(6);
-        std::cout << time << "\t" << name << '\n';
+        std::cout << time << "\t" << api << '\n';
     }
 }
 
@@ -71,7 +71,7 @@ static bool enabled_algorithm(const std::string &algorithm)
 
 static void time_algorithm(
     algorithm &alg,
-    const std::string &algname, const std::string &api, const std::string &name,
+    const std::string &algname, const std::string &api,
     const properties &props)
 {
     // Warmup
@@ -90,7 +90,7 @@ static void time_algorithm(
 
     std::chrono::duration<double> elapsed(stop - start);
     double time = elapsed.count();
-    output_result(algname, api, name, time, props);
+    output_result(algname, api, time, props);
 }
 
 template<typename T, typename... FactoryArgs>
@@ -103,7 +103,7 @@ static void time_entry(
         try
         {
             auto ptr = entry.factory(std::forward<FactoryArgs>(args)...);
-            time_algorithm(*ptr, algname, entry.api, entry.name, props);
+            time_algorithm(*ptr, algname, entry.api, props);
         }
         catch (device_not_supported)
         {
@@ -198,15 +198,15 @@ int main(int argc, char **argv)
         if (enabled_algorithm("sort"))
         {
             output_header("Sort");
-            for (const auto &entry : sort_registry<std::uint32_t, void>::get())
-                time_entry(entry, "sort", props, d, keys, void_vector());
+            for (const auto &entry : sort_registry<std::uint32_t>::get())
+                time_entry(entry, "sort", props, d, keys);
             output_footer();
         }
 
         if (enabled_algorithm("sort-by-key"))
         {
             output_header("Sort by key");
-            for (const auto &entry : sort_registry<std::uint32_t, std::uint32_t>::get())
+            for (const auto &entry : sort_by_key_registry<std::uint32_t, std::uint32_t>::get())
                 time_entry(entry, "sort-by-key", props, d, keys, values);
             output_footer();
         }
