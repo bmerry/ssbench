@@ -15,11 +15,11 @@ private:
 
 public:
     cuda_vector() : ptr(NULL), elements(0) {}
-    explicit cuda_vector(const std::vector<T> &v)
+
+    explicit cuda_vector(std::size_t elements)
     {
-        std::size_t bytes = v.size() * sizeof(T);
+        std::size_t bytes = size * sizeof(T);
         cudaMalloc(&ptr, bytes);
-        cudaMemcpy(ptr, &v[0], bytes, cudaMemcpyHostToDevice);
         elements = v.size();
     }
 
@@ -29,10 +29,8 @@ public:
             cudaFree(ptr);
     }
 
-    operator T*() const
-    {
-        return ptr;
-    }
+    T *data() { return ptr; }
+    const T *data() const { return ptr; }
 
     std::size_t size() const
     {
@@ -65,208 +63,137 @@ struct cub_double_vector : public boost::noncopyable
     std::size_t size() const { return elements; }
 };
 
-template<typename T>
-struct cub_traits
+class cub_algorithm
 {
-    typedef cuda_vector<T> vector;
-    typedef cub_double_vector<T> double_vector;
+private:
+    void *d_temp;
+    std::size_t d_temp_size;
 
-    static void copy(const vector &src, double_vector &trg)
+public:
+    template<typename T>
+    struct types
     {
-        cudaMemcpyAsync(trg.ptrs.Current(), src, src.size() * sizeof(T), cudaMemcpyDeviceToDevice);
+        typedef cuda_vector<T> vector;
+        typedef vector scan_vector;
+        typedef cub_double_vector<T> sort_vector;
+    };
+
+    template<typename T>
+    static void create(cuda_vector<T> &out, std::size_t elements)
+    {
+        out = cuda_vector<T>(elements);
     }
 
-    static std::vector<T> get(const double_vector &v)
+    template<typename T>
+    static void create(cub_double_vector<T> &out, std::size_t elements)
     {
-        std::vector<T> ans(v.size());
-        cudaMemcpy(ans.data(), const_cast<cub::DoubleBuffer<T> &>(v.ptrs).Current(),
-                   v.size() * sizeof(T), cudaMemcpyDeviceToHost);
-        return ans;
+        out = cub_double_vector(elements);
+    }
+
+    template<typename T>
+    static void copy(const std::vector<T> &src, cuda_vector<T> &dst)
+    {
+        cudaMemcpy(dst.data(), &src[0], src.size() * sizeof(T), cudaMemcpyHostToDevice);
+    }
+
+    template<typename T>
+    static void copy(const cuda_vector<T> &src, const cub_double_vector<T> &dst)
+    {
+        cudaMemcpy(dst.ptrs.Current(), src.data(), src.size() * sizeof(T), cudaMemcpyDeviceToDevice);
+    }
+
+    template<typename T>
+    static void copy(const cub_double_vector<T> &src, std::vector<T> &dst)
+    {
+        cudaMemcpy(&dst[0], src.ptrs.Current(), src.size() * sizeof(T), cudaMemcpyDeviceToHost);
+    }
+
+    template<typename T>
+    void pre_scan(const cuda_vector<T> &src, cuda_vector<T> &dst)
+    {
+        cub::DeviceScan::ExclusiveSum(NULL, d_temp_size, src.data(), dst.data(), src.size());
+        cudaMalloc(&d_temp, d_temp_size);
+    }
+
+    template<typename T>
+    void scan(const cuda_vector<T> &src, cuda_vector<T> &dst)
+    {
+        cub::DeviceScan::ExclusiveSum(d_temp, d_temp_size, src.data(), dst.data(), src.size());
     }
 
     template<typename K>
-    static void sort(cub_double_vector<K> &keys, double_vector &values,
-                     void *d_temp, std::size_t &temp_bytes)
+    void pre_sort(cub_double_vector<T> &keys)
     {
-        cub::DeviceRadixSort::SortPairs(d_temp, temp_bytes, keys.ptrs, values.ptrs, keys.size());
-    }
-};
-
-template<>
-struct cub_traits<void>
-{
-    struct vector
-    {
-        vector() {}
-        explicit vector(const void_vector &) {}
-        std::size_t size() const { return 0; }
-    };
-
-    struct double_vector
-    {
-        double_vector() {}
-        explicit double_vector(std::size_t size) {}
-        std::size_t size() const { return 0; }
-    };
-
-    static void copy(const vector &src, double_vector &trg)
-    {
-    }
-
-    static void_vector get(const double_vector &v)
-    {
-        return void_vector();
+        cub::DeviceRadixSort::Sort(NULL, d_temp_size, keys.ptrs, keys.size());
+        cudaMalloc(&d_temp, d_temp_size);
     }
 
     template<typename K>
-    static void sort(cub_double_vector<K> &keys, double_vector &values,
-                     void *d_temp, std::size_t &temp_bytes)
+    void sort(cub_double_vector<T> &keys)
     {
-        cub::DeviceRadixSort::SortKeys(d_temp, temp_bytes, keys.ptrs, keys.elements);
+        cub::DeviceRadixSort::Sort(d_temp, d_temp_size, keys.ptrs, keys.size());
+    }
+
+    template<typename K, typename V>
+    void pre_sort_by_key(cub_double_vector<T> &keys, cub_double_vector<T> &values)
+    {
+        cub::DeviceRadixSort::SortPairs(NULL, d_temp_size, keys.ptrs, values.ptrs, keys.size());
+        cudaMalloc(&d_temp, d_temp_size);
+    }
+
+    template<typename K, typename V>
+    void pre_sort_by_key(cub_double_vector<T> &keys, cub_double_vector<T> &values)
+    {
+        cub::DeviceRadixSort::SortPairs(d_temp, d_temp_size, keys.ptrs, values.ptrs, keys.size());
+    }
+
+    static void finish()
+    {
+        cudaDeviceSynchronize();
+    }
+
+    static std::string api() { return "cub"; }
+
+    explicit cub_algorithm(device_type d) : d_temp(NULL), d_temp_size(0)
+    {
+        if (d != DEVICE_TYPE_GPU)
+            throw device_not_supported();
+    }
+
+    ~cub_algorithm()
+    {
+        if (d_temp != NULL)
+            cudaFree(d_temp);
     }
 };
 
 /********************************************************************/
 
 template<typename T>
-class cub_scan : public scan_algorithm<T>
+algorithm *algorithm_factory<scan_algorithm<T, cub_algorithm> >::create(
+    device_type d,
+    const std::vector<T> &h_a)
 {
-private:
-    T *d_a;
-    T *d_scan;
-    void *d_temp;
-    std::size_t elements;
-    std::size_t temp_bytes;
-
-public:
-    cub_scan(device_type d, const std::vector<T> &h_a) :
-        scan_algorithm<T>(h_a),
-        d_a(NULL), d_scan(NULL), d_temp(NULL), elements(h_a.size()),
-        temp_bytes(0)
-    {
-        if (d != DEVICE_TYPE_GPU)
-            throw device_not_supported();
-
-        std::size_t bytes = elements * sizeof(T);
-        cudaMalloc(&d_a, bytes);
-        cudaMalloc(&d_scan, bytes);
-        cudaMemcpy(d_a, h_a.data(), bytes, cudaMemcpyHostToDevice);
-
-        cub::DeviceScan::ExclusiveSum(NULL, temp_bytes, d_a, d_scan, elements);
-        cudaMalloc(&d_temp, temp_bytes);
-    }
-
-    ~cub_scan()
-    {
-        cudaFree(d_a);
-        cudaFree(d_scan);
-        cudaFree(d_temp);
-    }
-
-    static std::string name() { return "cub::DeviceScan::ExclusiveSum"; }
-    static std::string api() { return "cub"; }
-    virtual void finish() { cudaDeviceSynchronize(); }
-
-    virtual void run()
-    {
-        cub::DeviceScan::ExclusiveSum(d_temp, temp_bytes, d_a, d_scan, elements);
-    }
-
-    virtual std::vector<T> get() const
-    {
-        std::vector<T> ans(elements);
-        cudaMemcpy(ans.data(), d_scan, elements * sizeof(T), cudaMemcpyDeviceToHost);
-        return ans;
-    }
-};
-
-template<typename T>
-scan_algorithm<T> *algorithm_factory<cub_scan<T> >::create(device_type d, const std::vector<T> &h_a)
-{
-    return new cub_scan<T>(d, h_a);
+    return new scan_algorithm<T, cub_algorithm>(d, h_a);
 }
 
-template<typename T>
-std::string algorithm_factory<cub_scan<T> >::name() { return cub_scan<T>::name(); }
-
-template<typename T>
-std::string algorithm_factory<cub_scan<T> >::api() { return cub_scan<T>::api(); }
-
-template struct algorithm_factory<cub_scan<int> >;
-
-/********************************************************************/
-
-template<typename K, typename V>
-class cub_sort : public sort_algorithm<K, V>
+template<typename K>
+algorithm *algorithm_factory<sort_algorithm<K, cub_algorithm> >::create(
+    device_type d,
+    const std::vector<K> &h_keys)
 {
-private:
-    typedef typename vector_of<K>::type key_vector;
-    typedef typename vector_of<V>::type value_vector;
-    typedef typename cub_traits<K>::vector d_key_vector;
-    typedef typename cub_traits<V>::vector d_value_vector;
-    typedef typename cub_traits<K>::double_vector double_key_vector;
-    typedef typename cub_traits<V>::double_vector double_value_vector;
-
-    d_key_vector d_keys;
-    double_key_vector d_sorted_keys;
-    d_value_vector d_values;
-    double_value_vector d_sorted_values;
-
-    void *d_temp;
-    std::size_t temp_bytes;
-
-public:
-    cub_sort(device_type d, const key_vector &h_keys, const value_vector &h_values)
-        : sort_algorithm<K, V>(h_keys, h_values),
-        d_keys(h_keys), d_sorted_keys(h_keys.size()),
-        d_values(h_values), d_sorted_values(h_values.size()),
-        d_temp(NULL),
-        temp_bytes(0)
-    {
-        if (d != DEVICE_TYPE_GPU)
-            throw device_not_supported();
-
-        cub_traits<V>::template sort<K>(d_sorted_keys, d_sorted_values, NULL, temp_bytes);
-        cudaMalloc(&d_temp, temp_bytes);
-    }
-
-    ~cub_sort()
-    {
-        cudaFree(d_temp);
-    }
-
-    static std::string name() { return "cub::DeviceRadixSort::SortKeys"; }
-    static std::string api() { return "cub"; }
-    virtual void finish() { cudaDeviceSynchronize(); }
-
-    virtual void run()
-    {
-        cub_traits<K>::copy(d_keys, d_sorted_keys);
-        cub_traits<V>::copy(d_values, d_sorted_values);
-        cub_traits<V>::template sort<K>(d_sorted_keys, d_sorted_values, d_temp, temp_bytes);
-    }
-
-    virtual std::pair<key_vector, value_vector> get() const
-    {
-        return std::make_pair(
-            cub_traits<K>::get(d_sorted_keys),
-            cub_traits<V>::get(d_sorted_values));
-    }
-};
-
-template<typename K, typename V>
-sort_algorithm<K, V> *algorithm_factory<cub_sort<K, V> >::create(device_type d,
-    const typename vector_of<K>::type &h_keys,
-    const typename vector_of<V>::type &h_values)
-{
-    return new cub_sort<K, V>(d, h_keys, h_values);
+    return new sort_algorithm<K, cub_algorithm>(d, h_keys);
 }
 
 template<typename K, typename V>
-std::string algorithm_factory<cub_sort<K, V> >::name() { return cub_sort<K, V>::name(); }
+algorithm *algorithm_factory<sort_by_key_algorithm<K, V, cub_algorithm> >::create(
+    device_type d,
+    const std::vector<K> &h_keys,
+    const std::vector<V> &h_values)
+{
+    return new sort_by_key_algorithm<K, V, cub_algorithm>(d, h_keys, h_values);
+}
 
-template<typename K, typename V>
-std::string algorithm_factory<cub_sort<K, V> >::api() { return cub_sort<K, V>::api(); }
-
-template struct algorithm_factory<cub_sort<unsigned int, void> >;
-template struct algorithm_factory<cub_sort<unsigned int, unsigned int> >;
+template class algorithm_factory<scan_algorithm<int, cub_algorithm> >;
+template class algorithm_factory<sort_algorithm<unsigned int, cub_algorithm> >;
+template class algorithm_factory<sort_by_key_algorithm<unsigned int, unsigned int, cub_algorithm> >;

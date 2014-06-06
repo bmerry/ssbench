@@ -1,4 +1,3 @@
-#include <vector>
 #include "algorithms.h"
 #include "register.h"
 #include "thrust.h"
