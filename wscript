@@ -47,6 +47,7 @@ def options(ctx):
     ctx.add_option('--with-bolt', action = 'store', help = 'Path to Bolt')
     ctx.add_option('--with-thrust', action = 'store', help = 'Path to Thrust')
     ctx.add_option('--with-cub', action = 'store', help = 'Path to CUB')
+    ctx.add_option('--with-mgpu', action = 'store', help = 'Path to ModernGPU')
 
 @conf
 def check_library(self, func, option, includes_add, libpath_add, *args, **kw):
@@ -75,11 +76,15 @@ def configure(ctx):
     ctx.add_os_flags('CUDAFLAGS')
     ctx.env.append_value('CXXFLAGS', ['-std=c++11', '-fopenmp'])
     ctx.env.append_value('LINKFLAGS', ['-fopenmp'])
+    for arch, code in [('20', '20'), ('20', '21'), ('30', '30'), ('32', '32'), ('35', '35')]:
+        ctx.env.append_value('CUDAFLAGS', ['-gencode', 'arch=compute_{},code=sm_{}'.format(arch, code)])
 
     ctx.env.have_thrust = ctx.check_cuda_library(ctx.check_cuda, ctx.options.with_thrust, [''], [],
         header_name = 'thrust/scan.h', uselib_store = 'THRUST')
     ctx.env.have_cub = ctx.check_cuda_library(ctx.check_cuda, ctx.options.with_cub, [''], [],
         header_name = 'cub/cub.cuh', uselib_store = 'CUB')
+    ctx.env.have_mgpu = ctx.check_cuda_library(ctx.check_cuda, ctx.options.with_mgpu, ['include'], [],
+        header_name = 'moderngpu.cuh', uselib_store = 'MGPU')
     ctx.env.have_clogs = ctx.check_library(ctx.check_cxx, ctx.options.with_clogs, ['include'], ['lib'],
         header_name = 'clogs/clogs.h', lib = ['clogs', 'OpenCL'], uselib_store = 'CLOGS')
     ctx.env.have_compute = ctx.check_library(ctx.check_cxx, ctx.options.with_compute, ['include'], [],
@@ -104,8 +109,6 @@ def build(ctx):
     ctx.env.append_value('CXXFLAGS', ['-Wall', '-O3'])
 
     ctx.env['NVCC_XCOMPILER'] = '-Xcompiler=%s'
-    for arch, code in [('20', '20'), ('20', '21'), ('30', '30'), ('32', '32'), ('35', '35')]:
-        ctx.env.append_value('CUDAFLAGS', ['-gencode', 'arch=compute_{},code=sm_{}'.format(arch, code)])
     ctx.env.append_value('DEFINES', ['__CL_ENABLE_EXCEPTIONS'])
 
     if ctx.env.have_clogs:
@@ -129,6 +132,8 @@ def build(ctx):
         sources += ['cub.cu', 'cub_register.cpp']
         use += ['CUB']
         need_cuda = True
+    if ctx.env.have_mgpu:
+        sources += ['mgpu.cu', 'mgpu_register.cpp']
 
     if need_cuda:
         features += ['cuda', 'cudaprogram']
