@@ -185,33 +185,4 @@ public:
     }
 };
 
-/********************************************************************/
-
-template<typename T>
-algorithm *algorithm_factory<scan_algorithm<T, cub_algorithm> >::create(
-    device_type d,
-    const std::vector<T> &h_a)
-{
-    return new scan_algorithm<T, cub_algorithm>(d, h_a);
-}
-
-template<typename K>
-algorithm *algorithm_factory<sort_algorithm<K, cub_algorithm> >::create(
-    device_type d,
-    const std::vector<K> &h_keys)
-{
-    return new sort_algorithm<K, cub_algorithm>(d, h_keys);
-}
-
-template<typename K, typename V>
-algorithm *algorithm_factory<sort_by_key_algorithm<K, V, cub_algorithm> >::create(
-    device_type d,
-    const std::vector<K> &h_keys,
-    const std::vector<V> &h_values)
-{
-    return new sort_by_key_algorithm<K, V, cub_algorithm>(d, h_keys, h_values);
-}
-
-template class algorithm_factory<scan_algorithm<int, cub_algorithm> >;
-template class algorithm_factory<sort_algorithm<unsigned int, cub_algorithm> >;
-template class algorithm_factory<sort_by_key_algorithm<unsigned int, unsigned int, cub_algorithm> >;
+static register_algorithms<cub_algorithm> register_cub;
