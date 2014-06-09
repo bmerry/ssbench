@@ -1,7 +1,7 @@
 #ifndef CUDAUTILS_H
 #define CUDAUTILS_H
 
-#include <iostream>
+#include <sstream>
 #include <stdexcept>
 
 #define CUDA_CHECK(expr) (cuda_check(expr, __FILE__, __LINE__))
@@ -12,7 +12,7 @@ public:
     cuda_error(const std::string &msg) : std::runtime_error(msg) {}
 };
 
-static inline cuda_check(cudaError_t err, const char *file, int line)
+static inline void cuda_check(cudaError_t err, const char *file, int line)
 {
     if (err != cudaSuccess)
     {
