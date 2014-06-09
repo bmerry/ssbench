@@ -135,7 +135,7 @@ def build(ctx):
         need_cuda = True
     if ctx.env.have_mgpu:
         mgpuutil = ctx(
-                features = ['cuda', 'cxx', 'objects'],
+                features = ['cuda', 'cxx'],
                 target = 'mgpuutil_o',
                 source = ctx.root.find_resource(os.path.join(ctx.env.mgpu_path, 'src', 'mgpuutil.cpp')),
                 use = ['MGPU'])
