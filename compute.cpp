@@ -20,12 +20,17 @@ private:
     compute::context ctx;
     mutable compute::command_queue queue;
 
-    static compute::device getDevice(device_type d)
+    static compute::device getDevice(device_info d)
     {
+        int index = d.index;
         for (const auto &device : compute::system::devices())
         {
-            if (device.type() == type_to_cl_type(d))
-                return device;
+            if (device.type() == type_to_cl_type(d.type))
+            {
+                if (index == 0)
+                    return device;
+                index--;
+            }
         }
         throw device_not_supported();
     }
@@ -104,7 +109,7 @@ public:
 
     static std::string api() { return "compute"; }
 
-    explicit compute_algorithm(device_type d)
+    explicit compute_algorithm(device_info d)
         : device(getDevice(d)),
         ctx(device),
         queue(ctx, device)

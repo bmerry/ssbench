@@ -6,6 +6,7 @@
 #include "algorithms.h"
 #include "register.h"
 #include "moderngpu.cuh"
+#include "cudautils.h"
 
 class mgpu_algorithm
 {
@@ -81,16 +82,16 @@ public:
 
     static void finish()
     {
-        cudaDeviceSynchronize();
+        CUDA_CHECK( cudaDeviceSynchronize() );
     }
 
     static std::string api() { return "mgpu"; }
 
-    explicit mgpu_algorithm(device_type d)
+    explicit mgpu_algorithm(device_info d)
     {
-        if (d != DEVICE_TYPE_GPU)
+        if (d.type != DEVICE_TYPE_GPU || d.index >= mgpu::CudaDevice::DeviceCount())
             throw device_not_supported();
-        ctx = mgpu::CreateCudaDevice(0);
+        ctx = mgpu::CreateCudaDevice(d.index);
     }
 };
 

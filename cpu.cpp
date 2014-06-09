@@ -43,9 +43,9 @@ public:
 
     static void finish() {}
 
-    explicit cpu_algorithm(device_type d)
+    explicit cpu_algorithm(device_info d)
     {
-        if (d != DEVICE_TYPE_CPU)
+        if (d.type != DEVICE_TYPE_CPU)
             throw device_not_supported();
     }
 };

@@ -80,7 +80,7 @@ public:
 
     static std::string api() { return "vex"; }
 
-    explicit vex_algorithm(device_type d) : ctx(vex::Filter::Type(type_to_cl_type(d)) && vex::Filter::Position(0))
+    explicit vex_algorithm(device_info d) : ctx(vex::Filter::Type(type_to_cl_type(d.type)) && vex::Filter::Position(d.index))
     {
         if (!ctx)
             throw device_not_supported();

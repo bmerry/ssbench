@@ -128,6 +128,7 @@ static po::variables_map processOptions(int argc, char **argv)
         ("warmup",        po::value<int>()->default_value(3), "Number of warmup rounds")
         ("csv",           "output results in CSV format")
         ("cpu",           "run algorithms on the CPU")
+        ("index",         po::value<int>()->default_value(0), "index number of device")
         ("api,a",         po::value<std::vector<std::string> >()->composing(), "library to benchmark")
         ("algorithm,A",   po::value<std::vector<std::string> >()->composing(), "algorithm to benchmark");
 
@@ -163,7 +164,9 @@ int main(int argc, char **argv)
     props.iterations = vm["iterations"].as<int>();
     props.warmup = vm["warmup"].as<int>();
     props.N = vm["items"].as<int>();
-    device_type d = vm.count("cpu") ? DEVICE_TYPE_CPU : DEVICE_TYPE_GPU;
+    device_info d;
+    d.type = vm.count("cpu") ? DEVICE_TYPE_CPU : DEVICE_TYPE_GPU;
+    d.index = vm["index"].as<int>();
     csv = vm.count("csv");
     if (vm.count("api"))
         for (const std::string &a : vm["api"].as<std::vector<std::string> >())

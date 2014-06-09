@@ -19,6 +19,12 @@ enum device_type
     DEVICE_TYPE_GPU
 };
 
+struct device_info
+{
+    device_type type;
+    int index;
+};
+
 /* Exception class thrown by constructors to indicate that the library does not
  * support the given device. This is a slight abuse of exceptions (it is not
  * really exceptional), but is used because constructors cannot just return a
@@ -60,7 +66,7 @@ private:
 public:
     typedef T value_type;
 
-    scan_algorithm(device_type d, const std::vector<T> &in)
+    scan_algorithm(device_info d, const std::vector<T> &in)
         : expected(in.size()), impl(d)
     {
         impl.create(d_a, in.size());
@@ -107,7 +113,7 @@ private:
     typename A::template types<V>::sort_vector d_sorted_values;
 
 public:
-    sort_by_key_algorithm(device_type d, const std::vector<K> &keys, const std::vector<V> &values)
+    sort_by_key_algorithm(device_info d, const std::vector<K> &keys, const std::vector<V> &values)
         : expected_keys(keys), expected_values(values), impl(d)
     {
         assert(keys.size() == values.size());
@@ -167,7 +173,7 @@ private:
     typename A::template types<K>::sort_vector d_sorted_keys;
 
 public:
-    sort_algorithm(device_type d, const std::vector<K> &keys)
+    sort_algorithm(device_info d, const std::vector<K> &keys)
         : expected_keys(keys), impl(d)
     {
         std::size_t N = keys.size();

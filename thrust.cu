@@ -5,6 +5,7 @@
 #include <string>
 #include "algorithms.h"
 #include "register.h"
+#include "cudautils.h"
 
 class thrust_algorithm
 {
@@ -70,18 +71,16 @@ public:
         thrust::sort(keys.begin(), keys.end());
     }
 
-
     static void finish()
     {
-        cudaDeviceSynchronize();
+        CUDA_CHECK( cudaDeviceSynchronize() );
     }
 
     static std::string api() { return "thrust"; }
 
-    explicit thrust_algorithm(device_type d)
+    explicit thrust_algorithm(device_info d)
     {
-        if (d != DEVICE_TYPE_GPU)
-            throw device_not_supported();
+        cuda_set_device(d);
     }
 };
 

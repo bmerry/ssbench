@@ -89,13 +89,13 @@ public:
 
     static std::string api() { return "bolt"; }
 
-    explicit bolt_algorithm(device_type d) : control()
+    explicit bolt_algorithm(device_info d) : control()
     {
-        cl::Device device = device_from_type(d);
+        cl::Device device = device_from_info(d);
         cl::Context ctx(device);
         cl::CommandQueue queue(ctx, device);
         control.setCommandQueue(queue);
-        switch (d)
+        switch (d.type)
         {
         case DEVICE_TYPE_GPU:
             control.setUseHost(bolt::cl::control::NoUseHost);

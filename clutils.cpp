@@ -16,24 +16,27 @@ cl_device_type type_to_cl_type(device_type d)
     }
 }
 
-cl::Device device_from_type(device_type d)
+cl::Device device_from_info(device_info d)
 {
     std::vector<cl::Platform> platforms;
     cl::Platform::get(&platforms);
+    int index = d.index;
     for (const cl::Platform &platform : platforms)
     {
         std::vector<cl::Device> devices;
         try
         {
-            platform.getDevices(type_to_cl_type(d), &devices);
+            platform.getDevices(type_to_cl_type(d.type), &devices);
         }
         catch (cl::Error &e)
         {
             if (e.err() != CL_DEVICE_NOT_FOUND)
                 throw;
         }
-        if (!devices.empty())
-            return devices[0];
+        if (index < (int) devices.size())
+            return devices[index];
+        else
+            index -= devices.size();
     }
     throw device_not_supported();
 }

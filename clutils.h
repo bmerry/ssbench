@@ -6,6 +6,6 @@
 #include "algorithms.h"
 
 cl_device_type type_to_cl_type(device_type d);
-cl::Device device_from_type(device_type d);
+cl::Device device_from_info(device_info d);
 
 #endif

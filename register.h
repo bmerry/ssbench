@@ -24,14 +24,14 @@ struct scan_entry
     class base_type : public entry_base
     {
     public:
-        virtual algorithm *create(device_type d, const std::vector<T> &values) const = 0;
+        virtual algorithm *create(device_info d, const std::vector<T> &values) const = 0;
     };
 
     template<typename A>
     class type : public base_type
     {
     public:
-        virtual algorithm *create(device_type d, const std::vector<T> &values) const
+        virtual algorithm *create(device_info d, const std::vector<T> &values) const
         {
             return new scan_algorithm<T, A>(d, values);
         }
@@ -49,14 +49,14 @@ struct sort_entry
     class base_type : public entry_base
     {
     public:
-        virtual algorithm *create(device_type d, const std::vector<K> &keys) const = 0;
+        virtual algorithm *create(device_info d, const std::vector<K> &keys) const = 0;
     };
 
     template<typename A>
     class type : public base_type
     {
     public:
-        virtual algorithm *create(device_type d, const std::vector<K> &keys) const
+        virtual algorithm *create(device_info d, const std::vector<K> &keys) const
         {
             return new sort_algorithm<K, A>(d, keys);
         }
@@ -75,14 +75,14 @@ struct sort_by_key_entry
     class base_type : public entry_base
     {
     public:
-        virtual algorithm *create(device_type d, const std::vector<K> &keys, const std::vector<V> &values) const = 0;
+        virtual algorithm *create(device_info d, const std::vector<K> &keys, const std::vector<V> &values) const = 0;
     };
 
     template<typename A>
     class type : public base_type
     {
     public:
-        virtual algorithm *create(device_type d, const std::vector<K> &keys, const std::vector<V> &values) const
+        virtual algorithm *create(device_info d, const std::vector<K> &keys, const std::vector<V> &values) const
         {
             return new sort_by_key_algorithm<K, V, A>(d, keys, values);
         }

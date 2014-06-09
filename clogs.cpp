@@ -125,8 +125,8 @@ public:
 
     static std::string api() { return "clogs"; }
 
-    explicit clogs_algorithm(device_type d)
-        : device(device_from_type(d)),
+    explicit clogs_algorithm(device_info d)
+        : device(device_from_info(d)),
         ctx(device),
         queue(ctx, device)
     {

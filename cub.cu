@@ -5,6 +5,7 @@
 #include <boost/utility.hpp>
 #include "algorithms.h"
 #include "register.h"
+#include "cudautils.h"
 
 template<typename T>
 class cuda_vector : public boost::noncopyable
@@ -19,7 +20,7 @@ public:
     explicit cuda_vector(std::size_t elements)
     {
         std::size_t bytes = elements * sizeof(T);
-        cudaMalloc(&ptr, bytes);
+        CUDA_CHECK( cudaMalloc(&ptr, bytes) );
         this->elements = elements;
     }
 
@@ -54,8 +55,8 @@ struct cub_double_vector : public boost::noncopyable
     explicit cub_double_vector(std::size_t size)
     {
         std::size_t bytes = size * sizeof(T);
-        cudaMalloc(&ptrs.d_buffers[0], bytes);
-        cudaMalloc(&ptrs.d_buffers[1], bytes);
+        CUDA_CHECK( cudaMalloc(&ptrs.d_buffers[0], bytes) );
+        CUDA_CHECK( cudaMalloc(&ptrs.d_buffers[1], bytes) );
         elements = size;
     }
     ~cub_double_vector()
@@ -105,77 +106,76 @@ public:
     template<typename T>
     static void copy(const std::vector<T> &src, cuda_vector<T> &dst)
     {
-        cudaMemcpy(dst.data(), &src[0], src.size() * sizeof(T), cudaMemcpyHostToDevice);
+        CUDA_CHECK( cudaMemcpy(dst.data(), &src[0], src.size() * sizeof(T), cudaMemcpyHostToDevice) );
     }
 
     template<typename T>
     static void copy(const cuda_vector<T> &src, cub_double_vector<T> &dst)
     {
-        cudaMemcpy(dst.ptrs.Current(), src.data(), src.size() * sizeof(T), cudaMemcpyDeviceToDevice);
+        CUDA_CHECK( cudaMemcpy(dst.ptrs.Current(), src.data(), src.size() * sizeof(T), cudaMemcpyDeviceToDevice) );
     }
 
     template<typename T>
     static void copy(const cuda_vector<T> &src, std::vector<T> &dst)
     {
-        cudaMemcpy(&dst[0], src.data(), src.size() * sizeof(T), cudaMemcpyDeviceToHost);
+        CUDA_CHECK( cudaMemcpy(&dst[0], src.data(), src.size() * sizeof(T), cudaMemcpyDeviceToHost) );
     }
 
     template<typename T>
     static void copy(const cub_double_vector<T> &src, std::vector<T> &dst)
     {
-        cudaMemcpy(&dst[0], src.ptrs.Current(), src.size() * sizeof(T), cudaMemcpyDeviceToHost);
+        CUDA_CHECK( cudaMemcpy(&dst[0], src.ptrs.Current(), src.size() * sizeof(T), cudaMemcpyDeviceToHost) );
     }
 
     template<typename T>
     void pre_scan(const cuda_vector<T> &src, cuda_vector<T> &dst)
     {
-        cub::DeviceScan::ExclusiveSum(NULL, d_temp_size, src.data(), dst.data(), src.size());
-        cudaMalloc(&d_temp, d_temp_size);
+        CUDA_CHECK( cub::DeviceScan::ExclusiveSum(NULL, d_temp_size, src.data(), dst.data(), src.size()) );
+        CUDA_CHECK( cudaMalloc(&d_temp, d_temp_size) );
     }
 
     template<typename T>
     void scan(const cuda_vector<T> &src, cuda_vector<T> &dst)
     {
-        cub::DeviceScan::ExclusiveSum(d_temp, d_temp_size, src.data(), dst.data(), src.size());
+        CUDA_CHECK( cub::DeviceScan::ExclusiveSum(d_temp, d_temp_size, src.data(), dst.data(), src.size()) );
     }
 
     template<typename K>
     void pre_sort(cub_double_vector<K> &keys)
     {
-        cub::DeviceRadixSort::SortKeys(NULL, d_temp_size, keys.ptrs, keys.size());
-        cudaMalloc(&d_temp, d_temp_size);
+        CUDA_CHECK( cub::DeviceRadixSort::SortKeys(NULL, d_temp_size, keys.ptrs, keys.size()) );
+        CUDA_CHECK( cudaMalloc(&d_temp, d_temp_size) );
     }
 
     template<typename K>
     void sort(cub_double_vector<K> &keys)
     {
-        cub::DeviceRadixSort::SortKeys(d_temp, d_temp_size, keys.ptrs, keys.size());
+        CUDA_CHECK( cub::DeviceRadixSort::SortKeys(d_temp, d_temp_size, keys.ptrs, keys.size()) );
     }
 
     template<typename K, typename V>
     void pre_sort_by_key(cub_double_vector<K> &keys, cub_double_vector<V> &values)
     {
-        cub::DeviceRadixSort::SortPairs(NULL, d_temp_size, keys.ptrs, values.ptrs, keys.size());
-        cudaMalloc(&d_temp, d_temp_size);
+        CUDA_CHECK( cub::DeviceRadixSort::SortPairs(NULL, d_temp_size, keys.ptrs, values.ptrs, keys.size()) );
+        CUDA_CHECK( cudaMalloc(&d_temp, d_temp_size) );
     }
 
     template<typename K, typename V>
     void sort_by_key(cub_double_vector<K> &keys, cub_double_vector<V> &values)
     {
-        cub::DeviceRadixSort::SortPairs(d_temp, d_temp_size, keys.ptrs, values.ptrs, keys.size());
+        CUDA_CHECK( cub::DeviceRadixSort::SortPairs(d_temp, d_temp_size, keys.ptrs, values.ptrs, keys.size()) );
     }
 
     static void finish()
     {
-        cudaDeviceSynchronize();
+        CUDA_CHECK( cudaDeviceSynchronize() );
     }
 
     static std::string api() { return "cub"; }
 
-    explicit cub_algorithm(device_type d) : d_temp(NULL), d_temp_size(0)
+    explicit cub_algorithm(device_info d) : d_temp(NULL), d_temp_size(0)
     {
-        if (d != DEVICE_TYPE_GPU)
-            throw device_not_supported();
+        cuda_set_device(d);
     }
 
     ~cub_algorithm()
