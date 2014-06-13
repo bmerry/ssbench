@@ -18,8 +18,8 @@
 /* Note: this file must not use C++11 features, because CUDA does not support it.
  */
 
-#ifndef SCANBENCH_REGISTER_H
-#define SCANBENCH_REGISTER_H
+#ifndef SSBENCH_REGISTER_H
+#define SSBENCH_REGISTER_H
 
 #include <memory>
 #include <functional>

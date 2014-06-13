@@ -15,8 +15,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef CUDAUTILS_H
-#define CUDAUTILS_H
+#ifndef SSBENCH_CUDAUTILS_H
+#define SSBENCH_CUDAUTILS_H
 
 #include <sstream>
 #include <stdexcept>
@@ -48,4 +48,4 @@ static inline void cuda_set_device(device_info d)
     CUDA_CHECK( cudaSetDevice(d.index) );
 }
 
-#endif /* CUDAUTILS_H */
+#endif

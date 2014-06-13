@@ -18,8 +18,8 @@
 /* Note: this file must not use C++11 features, because CUDA does not support it.
  */
 
-#ifndef SCANBENCH_ALGORITHMS_H
-#define SCANBENCH_ALGORITHMS_H
+#ifndef SSBENCH_ALGORITHMS_H
+#define SSBENCH_ALGORITHMS_H
 
 #include <vector>
 #include <string>

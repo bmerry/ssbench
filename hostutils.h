@@ -15,8 +15,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef HOSTUTILS_H
-#define HOSTUTILS_H
+#ifndef SSBENCH_HOSTUTILS_H
+#define SSBENCH_HOSTUTILS_H
 
 template<typename K, typename V>
 void sort_by_key(K &keys, V &values);

@@ -15,8 +15,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef CLUTILS_H
-#define CLUTILS_H
+#ifndef SSBENCH_CLUTILS_H
+#define SSBENCH_CLUTILS_H
 
 #include <CL/cl.hpp>
 #include <vector>
