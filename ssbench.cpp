@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <numeric>
 #include <set>
+#include <random>
 #include <boost/program_options.hpp>
 #include "algorithms.h"
 #include "register.h"
@@ -192,9 +193,11 @@ int main(int argc, char **argv)
     {
         std::vector<std::uint32_t> keys(props.N);
         std::vector<std::uint32_t> values(props.N);
+        std::mt19937_64 engine;
+        std::uniform_int_distribution<std::uint32_t> dist(0, UINT32_MAX);
         for (std::size_t i = 0; i < keys.size(); i++)
         {
-            keys[i] = (std::uint32_t) i * 0x9E3779B9;
+            keys[i] = dist(engine);
             values[i] = i;
         }
 

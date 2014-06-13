@@ -79,7 +79,7 @@ static void sort_by_key(I1 key_first, I1 key_last, I2 value_first, Cmp cmp = Cmp
 {
     pair_iterator<I1, I2> first(key_first, value_first);
     pair_iterator<I1, I2> last(key_last, value_first + (key_last - key_first));
-    std::sort(first, last,
+    std::stable_sort(first, last,
         PairCmp<typename std::iterator_traits<I1>::value_type,
                 typename std::iterator_traits<I2>::value_type,
                 Cmp>(cmp));
