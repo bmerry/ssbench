@@ -15,7 +15,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <cub/cub.cuh>
 #include <vector>
 #include <string>
 #include <cstddef>
