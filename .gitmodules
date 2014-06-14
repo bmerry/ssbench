@@ -1,0 +1,18 @@
+[submodule "boost.compute"]
+	path = boost.compute
+	url = https://github.com/kylelutz/compute
+[submodule "vexcl"]
+	path = vexcl
+	url = https://github.com/ddemidov/vexcl
+[submodule "clogs"]
+	path = clogs
+	url = git://git.code.sf.net/p/clogs/code
+[submodule "Bolt"]
+	path = Bolt
+	url = https://github.com/HSA-Libraries/Bolt
+[submodule "cub"]
+	path = cub
+	url = https://github.com/NVlabs/cub
+[submodule "moderngpu"]
+	path = moderngpu
+	url = https://github.com/NVlabs/moderngpu
