@@ -126,7 +126,7 @@ def build(ctx):
     ctx.env.append_value('CXXFLAGS', ['-Wall', '-O3'])
 
     ctx.env['NVCC_XCOMPILER'] = '-Xcompiler=%s'
-    ctx.env.append_value('DEFINES', ['__CL_ENABLE_EXCEPTIONS'])
+    ctx.env.append_value('DEFINES', ['__CL_ENABLE_EXCEPTIONS', 'BOOST_DISABLE_ASSERTS'])
 
     if ctx.env.have_clogs:
         sources += ['clogs.cpp']
