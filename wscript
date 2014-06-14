@@ -124,6 +124,7 @@ def build(ctx):
     features = ['cxx']
 
     ctx.env.append_value('CXXFLAGS', ['-Wall', '-O3'])
+    ctx.env.append_value('CUDAFLAGS', ['-Xcompiler=-Wall', '-O3'])
 
     ctx.env['NVCC_XCOMPILER'] = '-Xcompiler=%s'
     ctx.env.append_value('DEFINES', ['__CL_ENABLE_EXCEPTIONS', 'BOOST_DISABLE_ASSERTS'])
