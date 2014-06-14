@@ -19,7 +19,6 @@
 #include <vector>
 #include <string>
 #include <cstddef>
-#include <boost/utility.hpp>
 #include "algorithms.h"
 #include "register.h"
 #include "moderngpu.cuh"
